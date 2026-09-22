@@ -1,18 +1,22 @@
+/*------------------------------------------------------------------------------------------------------------------------------------------------
+   Para que el script se ejecute de una sola pasada, por favor asegúrese 
+   de colocar los 18 archivos CSV en la ruta segura de su servidor MySQL:
+   C:/ProgramData/MySQL/MySQL Server X.X/Uploads/
+   
+   https://drive.google.com/drive/folders/1ogxHLMOxqbDtDr0JjjXlNfBxNryxPC8Q?usp=sharing
+------------------------------------------------------------------------------------------------------------------------------------------------ */
 -- Query Teach Solitións.
 -- Movilidad: Ecobici CDMX.
--- -------------- Team 6 -------------
+-- -----------------------------------------------------TEAM 6-----------------------------------------------------------------------------------
 -- Estrada Romero Meliza Edith
 -- López Ramírez Ricardo
 -- Ruiz Sánchez Emiliano
 -- Cabrera Trejo José Luis
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 
-
 -- Creación de la base de datos
-CREATE DATABASE IF NOT EXISTS proyecto_ecobici;
-USE proyecto_ecobici;
-
--- Creación de todas las tablas (solo columnas y tipos de datos NO PK ni FK)
+CREATE DATABASE IF NOT EXISTS DB_Ecobici_CDMX;
+USE DB_Ecobici_CDMX;
 
 -- Catalogo de Generos
 CREATE TABLE cat_generos (
@@ -22,7 +26,7 @@ CREATE TABLE cat_generos (
 
 -- Catálogo de Estaciones
 CREATE TABLE estaciones (
-    id_estacion VARCHAR(20),
+    id_estacion VARCHAR(100),
     nombre_estacion VARCHAR(150),
     zona VARCHAR(100)
 );
@@ -55,38 +59,164 @@ CREATE TABLE dim_tiempos (
     franja_horaria VARCHAR(20)
 );
 
--- Tabla Principal de Viajes
-CREATE TABLE viajes (
+
+-- TABLA HISTÓRICO (PARTICIONADA)
+CREATE TABLE historico_viajes (
     genero_usuario CHAR(1),
     edad_usuario INT,
     bici VARCHAR(20),
-    ciclo_estacion_retiro VARCHAR(20), 
+    ciclo_estacion_retiro VARCHAR(100), 
     fecha_retiro DATE,
     hora_retiro TIME,
-    ciclo_estacion_arribo VARCHAR(20), 
+    ciclo_estacion_arribo VARCHAR(100), 
     fecha_arribo DATE,
     hora_arribo TIME
 )
 PARTITION BY RANGE COLUMNS(fecha_retiro) (
-    PARTITION p_2025_12 VALUES LESS THAN ('2026-01-01'), 
-    PARTITION p_2026_01 VALUES LESS THAN ('2026-02-01'), 
-    PARTITION p_2026_02 VALUES LESS THAN ('2026-03-01'), 
+    PARTITION p_2024 VALUES LESS THAN ('2025-01-01'), 
+    PARTITION p_2025 VALUES LESS THAN ('2026-01-01'), 
+    PARTITION p_2026 VALUES LESS THAN ('2027-01-01'), 
     PARTITION p_futuro VALUES LESS THAN (MAXVALUE)       
 );
 
+--  TABLA PRINCIPAL DE VIAJES (SIN PARTICIONES)
+CREATE TABLE viajes (
+    genero_usuario CHAR(1),
+    edad_usuario INT,
+    bici VARCHAR(20),
+    ciclo_estacion_retiro VARCHAR(100), 
+    fecha_retiro DATE,
+    hora_retiro TIME,
+    ciclo_estacion_arribo VARCHAR(100), 
+    fecha_arribo DATE,
+    hora_arribo TIME
+);
+
+-- ------------------------------------------------------------------------------------------------------------------------------------------------
+/*
+Ruta donde se moveran los archivos a cargar
+SHOW VARIABLES LIKE 'secure_file_priv';
+Vaciar la tabla por completo de manera instantánea sin PK, FPK
+TRUNCATE TABLE viajes;
+*/
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 
--- Ruta donde se moveran los archivos a cargar
-SHOW VARIABLES LIKE 'secure_file_priv';
--- Vaciar la tabla por completo de manera instantánea sin PK, FPK
-TRUNCATE TABLE viajes;
+-- ------------------------------------------------------------------------------------------------------------------------------------------------
+-- 2024
+-- ------------------------------------------------------------------------------------------------------------------------------------------------
+-- Carga Enero 2024
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2024-01.csv'
+INTO TABLE historico_viajes
+CHARACTER SET utf8mb4
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(
+	@genero_usuario,
+	@edad_usuario,
+	bici,
+	ciclo_estacion_retiro,
+	@fecha_retiro,
+	hora_retiro,
+	ciclo_estacion_arribo,
+	@fecha_arribo,
+	hora_arribo
+)
+SET
+	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario ),
+    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
+    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
+    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
 
+-- ------------------------------------------------------------------------------------------------------------------------------------------------
+-- Carga Febreo 2024
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2024-02.csv'
+INTO TABLE historico_viajes
+CHARACTER SET utf8mb4
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(
+	@genero_usuario,
+    @edad_usuario,
+    bici,
+    ciclo_estacion_retiro,
+    @fecha_retiro,
+    hora_retiro,
+    ciclo_estacion_arribo,
+    @fecha_arribo,
+    hora_arribo
+)
+SET
+	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
+    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
+    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
+    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
+
+
+-- ------------------------------------------------------------------------------------------------------------------------------------------------
+-- Carga Marzo 2024
+
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2024-03.csv'
+INTO TABLE historico_viajes
+CHARACTER SET utf8mb4
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(
+	@genero_usuario,
+    @edad_usuario,
+    bici,
+    ciclo_estacion_retiro,
+    @fecha_retiro,
+    hora_retiro,
+    ciclo_estacion_arribo,
+    @fecha_arribo,
+    hora_arribo
+)
+SET
+	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL , @genero_usuario),
+    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
+    fecha_retiro = STR_TO_DATE(@fecha_retiro,'%d/%m/%Y'),
+    fecha_arribo = STR_TO_DATE(@fecha_arribo,'%d/%m/%Y');
+	
+-- ------------------------------------------------------------------------------------------------------------------------------------------------
+-- Carga Abril 2024
+
+LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2024-04.csv'
+INTO TABLE historico_viajes
+CHARACTER SET utf8mb4
+FIELDS TERMINATED BY ','
+ENCLOSED BY '"'
+LINES TERMINATED BY '\n'
+IGNORE 1 ROWS
+(
+	@genero_usuario,
+    @edad_usuario,
+    bici,
+    ciclo_estacion_retiro,
+    @fecha_retiro,
+    hora_retiro,
+    ciclo_estacion_arribo,
+    @fecha_arribo,
+    hora_arribo
+)
+SET
+	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
+    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL , CAST(@edad_usuario AS UNSIGNED)),
+    fecha_retiro = STR_TO_DATE(@fecha_retiro,'%d/%m/%Y'),
+    fecha_arribo = STR_TO_DATE(@fecha_arribo,'%d/%m/%Y');
+    
+    
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- 2025
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Enero 2025
 LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-01.csv'
-INTO TABLE viajes
+INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -112,7 +242,7 @@ SET
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Febreo 2025
 LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-02.csv'
-INTO TABLE viajes
+INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -140,7 +270,7 @@ SET
 -- Carga Marzo 2025
 
 LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-03.csv'
-INTO TABLE viajes
+INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -167,9 +297,8 @@ SET
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Abril 2025
 
-
 LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-04.csv'
-INTO TABLE viajes
+INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -192,338 +321,15 @@ SET
     fecha_retiro = STR_TO_DATE(@fecha_retiro,'%d/%m/%Y'),
     fecha_arribo = STR_TO_DATE(@fecha_arribo,'%d/%m/%Y');
     
-    
--- ------------------------------------------------------------------------------------------------------------------------------------------------
--- Carga Mayo 2025
-
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-05.csv'
-INTO TABLE viajes
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
-(
-	@genero_usuario,
-    @edad_usuario,
-    bici,
-    ciclo_estacion_retiro,
-    @fecha_retiro,
-    hora_retiro,
-    ciclo_estacion_arribo,
-    @fecha_arribo,
-    hora_arribo
-)
-SET
-	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
-    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
-    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
-    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
-    
--- ------------------------------------------------------------------------------------------------------------------------------------------------
--- Carga Junio 2025
-
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-06.csv'
-INTO TABLE viajes
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
-(
-	@genero_usuario,
-    @edad_usuario,
-    bici,
-    ciclo_estacion_retiro,
-    @fecha_retiro,
-    hora_retiro,
-    ciclo_estacion_arribo,
-    @fecha_arribo,
-    hora_arribo
-)
-SET
-	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
-    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL , CAST(@edad_usuario AS UNSIGNED)),
-    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
-    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
-    
-    
-    -- ------------------------------------------------------------------------------------------------------------------------------------------------
--- Carga Julio 2025
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-07.csv'
-INTO TABLE viajes
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
-(
-	@genero_usuario,
-    @edad_usuario,
-    bici,
-    ciclo_estacion_retiro,
-    @fecha_retiro,
-    hora_retiro,
-    ciclo_estacion_arribo,
-    @fecha_arribo,
-    hora_arribo
-)
-SET
-	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
-    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
-    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
-    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
-    
-
-    -- ------------------------------------------------------------------------------------------------------------------------------------------------
--- Carga Agosto 2025
-
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-08.csv'
-INTO TABLE viajes
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
-(
-	@genero_usuario,
-    @edad_usuario,
-    bici,
-    ciclo_estacion_retiro,
-    @fecha_retiro,
-    hora_retiro,
-    ciclo_estacion_arribo,
-    @fecha_arribo,
-    hora_arribo
-)
-SET 
-	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
-    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
-    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
-    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
-    
-
--- ------------------------------------------------------------------------------------------------------------------------------------------------
--- Carga Septiembre 2025
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-09.csv'
-INTO TABLE viajes
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
-(
-	@genero_usuario,
-    @edad_usuario,
-    bici,
-    ciclo_estacion_retiro,
-    @fecha_retiro,
-    hora_retiro,
-    ciclo_estacion_arribo,
-    @fecha_arribo,
-    hora_arribo
-)
-SET
-	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
-    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
-    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
-    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
-
-
-
--- ------------------------------------------------------------------------------------------------------------------------------------------------
--- Carga Octubre 2025
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-10.csv'
-INTO TABLE viajes
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
-(
-	@genero_usuario,
-    @edad_usuario,
-    bici,
-    ciclo_estacion_retiro,
-    @fecha_retiro,
-    hora_retiro,
-    ciclo_estacion_arribo,
-    @fecha_arribo,
-    hora_arribo
-)
-SET
-	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
-    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
-    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
-    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
-
-
--- ------------------------------------------------------------------------------------------------------------------------------------------------
--- Carga Noviembre 2025
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-11.csv'
-INTO TABLE viajes
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
-(
-	@genero_usuario,
-    @edad_usuario,
-    bici,
-    ciclo_estacion_retiro,
-    @fecha_retiro,
-    hora_retiro,
-    ciclo_estacion_arribo,
-    @fecha_arribo,
-    hora_arribo
-)
-SET
-	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
-    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
-    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
-    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
-
-
--- ------------------------------------------------------------------------------------------------------------------------------------------------
--- Carga Diciembre 2025
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-12.csv'
-INTO TABLE viajes
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
-(
-	@genero_usuario,
-    @edad_usuario,
-    bici,
-    ciclo_estacion_retiro,
-    @fecha_retiro,
-    hora_retiro,
-    ciclo_estacion_arribo,
-    @fecha_arribo,
-    hora_arribo
-)
-SET
-	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
-    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
-    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
-    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
-
 
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- 2026
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
--- Carga Enero 2026
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-01.csv'
-INTO TABLE viajes
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
-(
-	@genero_usuario,
-    @edad_usuario,
-    bici,
-    ciclo_estacion_retiro,
-    @fecha_retiro,
-    hora_retiro,
-    ciclo_estacion_arribo,
-    @fecha_arribo,
-    hora_arribo
-)
-SET
-	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
-    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
-    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
-    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
-
--- ------------------------------------------------------------------------------------------------------------------------------------------------
--- Carga Febrero 2026
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-02.csv'
-INTO TABLE viajes
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
-(
-	@genero_usuario,
-    @edad_usuario,
-    bici,
-    ciclo_estacion_retiro,
-    @fecha_retiro,
-    hora_retiro,
-    ciclo_estacion_arribo,
-    @fecha_arribo,
-    hora_arribo
-)
-SET
-	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
-    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
-    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
-    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
 
 
--- ------------------------------------------------------------------------------------------------------------------------------------------------
--- Carga Marzo 2026
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-03.csv'
-INTO TABLE viajes
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
-(
-	@genero_usuario,
-    @edad_usuario,
-    bici,
-    ciclo_estacion_retiro,
-    @fecha_retiro,
-    hora_retiro,
-    ciclo_estacion_arribo,
-    @fecha_arribo,
-    hora_arribo
-)
-SET
-	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
-    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
-    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
-    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
-
--- ------------------------------------------------------------------------------------------------------------------------------------------------
--- Carga Abril 2026
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-04.csv'
-INTO TABLE viajes
-CHARACTER SET utf8mb4
-FIELDS TERMINATED BY ','
-ENCLOSED BY '"'
-LINES TERMINATED BY '\n'
-IGNORE 1 ROWS
-(
-	@genero_usuario,
-    @edad_usuario,
-    bici,
-    ciclo_estacion_retiro,
-    @fecha_retiro,
-    hora_retiro,
-    ciclo_estacion_arribo,
-    @fecha_arribo,
-    hora_arribo
-)
-SET
-	genero_usuario = IF(@genero_usuario = 'NULL' OR @genero_usuario = '?', NULL, @genero_usuario),
-    edad_usuario = IF(@edad_usuario = 'NULL' OR @edad_usuario = '', NULL, CAST(@edad_usuario AS UNSIGNED)),
-    fecha_retiro = STR_TO_DATE(@fecha_retiro, '%d/%m/%Y'),
-    fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
-
-
--- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Mayo2026
 LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-05.csv'
-INTO TABLE viajes
+INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -550,7 +356,7 @@ SET
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Junio 2026
 LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-06.csv'
-INTO TABLE viajes
+INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -577,7 +383,7 @@ SET
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Julio 2026
 LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-07.csv'
-INTO TABLE viajes
+INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -601,15 +407,10 @@ SET
     fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
 
 
-
-SELECT COUNT(*) AS Viajes_Julio_2026 
-FROM viajes 
-WHERE fecha_retiro >= '2026-07-01' AND fecha_retiro <= '2026-07-31';
-
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Agosto 2026
 LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-08.csv'
-INTO TABLE viajes
+INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
 ENCLOSED BY '"'
@@ -633,17 +434,28 @@ SET
     fecha_arribo = STR_TO_DATE(@fecha_arribo, '%d/%m/%Y');
     
 -- Verificar cantidad de registros cargada
-SELECT COUNT(*) AS Total_Viajes_ECOBICI FROM viajes;
+SELECT COUNT(*) AS Total_Viajes_ECOBICI FROM historico_viajes;
 
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
--- EXTRACCIÓN Y POBLADO DE CATÁLOGOS Y DIMENSIONES (NORMALIZACIÓN)
+-- EXTRACCIÓN Y POBLADO DE CATALOGOS 
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 /*  
 Lost connection to MySQL server
 Edit > Preferences. -> selecciona SQL Editor. -> sección MySQL Session. -> la opción DBMS connection read timeout interval (in seconds).
+TRUNCATE TABLE cat_generos;
 */
 
-TRUNCATE TABLE cat_generos;
+
+-- Poblar la tabla 'viajes' 2025(1,2) y 2026(7,8)
+INSERT INTO viajes
+SELECT * FROM historico_viajes
+WHERE 
+    (YEAR(fecha_retiro) = 2025 AND MONTH(fecha_retiro) IN (1, 2))
+    OR 
+    (YEAR(fecha_retiro) = 2026 AND MONTH(fecha_retiro) IN (7, 8));
+
+SELECT COUNT(*) AS Total_2025_2026 FROM viajes;
+
 
 -- Poblar Catalogo de Generos.
 INSERT INTO cat_generos (codigo_genero, descripcion)
@@ -656,27 +468,26 @@ SELECT DISTINCT
         ELSE 'No especificado'
     END
 FROM viajes
-WHERE TRIM(genero_usuario) IS NOT NULL 
-  AND TRIM(genero_usuario) != '';
-
+WHERE TRIM(genero_usuario) IS NOT NULL AND TRIM(genero_usuario) != ''; 
 
 -- Poblar Catalogo de Bicicletas
-INSERT INTO bicicletas(bici, tipo_bicicleta, estatus)
+INSERT INTO bicicletas (bici, tipo_bicicleta, estatus)
 SELECT DISTINCT
-	bici,
+    TRIM(bici),
     'Mecánica',
     'Activa'
 FROM viajes
-WHERE bici IS NOT NULL;
+WHERE TRIM(bici) IS NOT NULL AND TRIM(bici) != '';
 
 -- Poblar Catalogo de Estaciones
+
 INSERT INTO estaciones(id_estacion, nombre_estacion, zona)
 SELECT DISTINCT
-	id_est,
-    CONCAT('Estacion Ecoboci ', id_est), 
+    id_est,
+    CONCAT('Estación Ecobici ', id_est), 
     'CDMX'
 FROM(
-	SELECT ciclo_estacion_retiro AS id_est FROM viajes
+    SELECT ciclo_estacion_retiro AS id_est FROM viajes
     UNION
     SELECT ciclo_estacion_arribo AS id_est FROM viajes
 ) AS estaciones_unicas
@@ -709,7 +520,6 @@ FROM (
 WHERE fecha IS NOT NULL;
 
 -- Poblar Tiempos
-
 INSERT INTO dim_tiempos (hora, franja_horaria)
 SELECT DISTINCT 
     hora,
@@ -723,30 +533,28 @@ FROM (
     SELECT hora_retiro AS hora FROM viajes
     UNION
     SELECT hora_arribo AS hora FROM viajes
-) AS horas_unicas
-WHERE hora IS NOT NULL;
+) AS horas_unicas WHERE hora IS NOT NULL;
 
 -- Revisar los datos poblados a las tablas
+SELECT * FROM cat_generos;
 
-	SELECT * FROM cat_generos;
+SELECT COUNT(*) AS total_estaciones_unicas FROM estaciones;
+SELECT * FROM estaciones LIMIT 50;
 
-	SELECT COUNT(*) AS total_estaciones_unicas FROM estaciones;
-	SELECT * FROM estaciones LIMIT 50;
+SELECT COUNT(*) AS total_bicicletas_unicas FROM bicicletas;
+SELECT * FROM bicicletas LIMIT 500;
 
-	SELECT COUNT(*) AS total_bicicletas_unicas FROM bicicletas;
-	SELECT * FROM bicicletas LIMIT 500;
+SELECT COUNT(*) AS total_perfiles FROM dim_usuarios;
+SELECT * FROM dim_usuarios ORDER BY edad ASC LIMIT 50;
 
-	SELECT COUNT(*) AS total_perfiles FROM dim_usuarios;
-	SELECT * FROM dim_usuarios ORDER BY edad ASC LIMIT 50;
+SELECT COUNT(*) AS dias_operacion_registrados FROM dim_fechas;
+SELECT * FROM dim_fechas ORDER BY fecha ASC LIMIT 50;
 
-	SELECT COUNT(*) AS dias_operacion_registrados FROM dim_fechas;
-	SELECT * FROM dim_fechas ORDER BY fecha ASC LIMIT 50;
-
-	SELECT COUNT(*) AS horas_unicas_registradas FROM dim_tiempos;
-	SELECT * FROM dim_tiempos ORDER BY hora ASC LIMIT 50000;
+SELECT COUNT(*) AS horas_unicas_registradas FROM dim_tiempos;
+SELECT * FROM dim_tiempos ORDER BY hora ASC LIMIT 50000;
 
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
---  ALTER TABLE para crear las Llaves Primarias y Foráneas del proyecto.
+--  ALTER TABLE para crear las Llaves Primarias y Foraneas.
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- LLAVES PRIMARIAS (PK)
@@ -754,19 +562,28 @@ WHERE hora IS NOT NULL;
 ALTER TABLE cat_generos ADD PRIMARY KEY (codigo_genero);
 ALTER TABLE estaciones ADD PRIMARY KEY (id_estacion);
 ALTER TABLE bicicletas ADD PRIMARY KEY (bici);
-ALTER TABLE	dim_usuarios ADD PRIMARY KEY (id_perfil);
+ALTER TABLE dim_usuarios ADD PRIMARY KEY (id_perfil);
 ALTER TABLE dim_fechas ADD PRIMARY KEY (fecha);
 ALTER TABLE dim_tiempos ADD PRIMARY KEY (hora);
 
 
-    
-    
-/*  
-Quitar las particiones de la tabla viajes
-ALTER TABLE viajes REMOVE PARTITIONING;
+/*
+Dependiendo del hardware de tu computadora (si tienes disco de estado sólido SSD o un disco duro mecánico HDD tradicional, y cuánta RAM tienes asignada al Buffer Pool).
+18:10:25	ALTER TABLE viajes    
+ADD CONSTRAINT fk_viajes_genero FOREIGN KEY (genero_usuario) 
+REFERENCES cat_generos(codigo_genero),
+ADD CONSTRAINT fk_viajes_bici FOREIGN KEY (bici) REFERENCES bicicletas(bici),
+ADD CONSTRAINT fk_viajes_estacion_retiro FOREIGN KEY (ciclo_estacion_retiro) REFERENCES estaciones(id_estacion),
+ADD CONSTRAINT fk_viajes_estacion_arribo FOREIGN KEY (ciclo_estacion_arribo) REFERENCES estaciones(id_estacion),
+ADD CONSTRAINT fk_viajes_fecha_retiro FOREIGN KEY (fecha_retiro) REFERENCES dim_fechas(fecha),     
+ADD CONSTRAINT fk_viajes_hora_retiro FOREIGN KEY (hora_retiro) REFERENCES dim_tiempos(hora)	6521891 row(s) affected Records: 6521891  Duplicates: 0  Warnings: 0	
+851.937 sec
 
-Error 1506. Las llaves foráneas aún no son compatibles junto con el particionamiento......
-LLAVES Foraneas (FK)
+>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>> 15 Minutos <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+*/
+
+-- LLAVES FORÁNEAS (FK)
 ALTER TABLE viajes
     ADD CONSTRAINT fk_viajes_genero FOREIGN KEY (genero_usuario) REFERENCES cat_generos(codigo_genero),
     ADD CONSTRAINT fk_viajes_bici FOREIGN KEY (bici) REFERENCES bicicletas(bici),
@@ -774,12 +591,8 @@ ALTER TABLE viajes
     ADD CONSTRAINT fk_viajes_estacion_arribo FOREIGN KEY (ciclo_estacion_arribo) REFERENCES estaciones(id_estacion),
     ADD CONSTRAINT fk_viajes_fecha_retiro FOREIGN KEY (fecha_retiro) REFERENCES dim_fechas(fecha),
     ADD CONSTRAINT fk_viajes_hora_retiro FOREIGN KEY (hora_retiro) REFERENCES dim_tiempos(hora);
-
-
-*/
-
-
--- ------------------------------------------------------------------------------------------------------------------------------------------------
+    
+    -- ------------------------------------------------------------------------------------------------------------------------------------------------
 --  SENTENCIAS DML: INSERT, UPDATE, DELETE, SELECT
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 
