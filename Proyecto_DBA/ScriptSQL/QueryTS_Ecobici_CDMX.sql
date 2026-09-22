@@ -326,7 +326,6 @@ SET
 -- 2026
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 
-
 -- Carga Mayo2026
 LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-05.csv'
 INTO TABLE historico_viajes
@@ -542,7 +541,7 @@ SELECT COUNT(*) AS total_estaciones_unicas FROM estaciones;
 SELECT * FROM estaciones LIMIT 50;
 
 SELECT COUNT(*) AS total_bicicletas_unicas FROM bicicletas;
-SELECT * FROM bicicletas LIMIT 500;
+SELECT * FROM bicicletas LIMIT 50;
 
 SELECT COUNT(*) AS total_perfiles FROM dim_usuarios;
 SELECT * FROM dim_usuarios ORDER BY edad ASC LIMIT 50;
@@ -551,12 +550,13 @@ SELECT COUNT(*) AS dias_operacion_registrados FROM dim_fechas;
 SELECT * FROM dim_fechas ORDER BY fecha ASC LIMIT 50;
 
 SELECT COUNT(*) AS horas_unicas_registradas FROM dim_tiempos;
-SELECT * FROM dim_tiempos ORDER BY hora ASC LIMIT 50000;
+SELECT * FROM dim_tiempos ORDER BY hora ASC LIMIT 50;
 
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 --  ALTER TABLE para crear las Llaves Primarias y Foraneas.
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 
+/*
 -- LLAVES PRIMARIAS (PK)
 
 ALTER TABLE cat_generos ADD PRIMARY KEY (codigo_genero);
@@ -565,7 +565,7 @@ ALTER TABLE bicicletas ADD PRIMARY KEY (bici);
 ALTER TABLE dim_usuarios ADD PRIMARY KEY (id_perfil);
 ALTER TABLE dim_fechas ADD PRIMARY KEY (fecha);
 ALTER TABLE dim_tiempos ADD PRIMARY KEY (hora);
-
+*/
 
 /*
 Dependiendo del hardware de tu computadora (si tienes disco de estado sólido SSD o un disco duro mecánico HDD tradicional, y cuánta RAM tienes asignada al Buffer Pool).
@@ -583,6 +583,7 @@ ADD CONSTRAINT fk_viajes_hora_retiro FOREIGN KEY (hora_retiro) REFERENCES dim_ti
 
 */
 
+/*
 -- LLAVES FORÁNEAS (FK)
 ALTER TABLE viajes
     ADD CONSTRAINT fk_viajes_genero FOREIGN KEY (genero_usuario) REFERENCES cat_generos(codigo_genero),
@@ -592,45 +593,68 @@ ALTER TABLE viajes
     ADD CONSTRAINT fk_viajes_fecha_retiro FOREIGN KEY (fecha_retiro) REFERENCES dim_fechas(fecha),
     ADD CONSTRAINT fk_viajes_hora_retiro FOREIGN KEY (hora_retiro) REFERENCES dim_tiempos(hora);
     
-    -- ------------------------------------------------------------------------------------------------------------------------------------------------
+*/
+    
+-- ------------------------------------------------------------------------------------------------------------------------------------------------
 --  SENTENCIAS DML: INSERT, UPDATE, DELETE, SELECT
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 
--- INSERT
-INSERT INTO estaciones (id_estacion, nombre_estacion, zona)
-VALUE ('1111-FESA', 'Estacion FES Acatlan', 'Naucalpan');
+-- DML CAT_GENEROS
+INSERT INTO cat_generos (codigo_genero, descripcion) VALUES ('X', 'No Binario');
+UPDATE cat_generos SET descripcion = 'Indefinido' WHERE codigo_genero = 'X';
+DELETE FROM cat_generos WHERE codigo_genero = 'X';
 
-SELECT * FROM estaciones WHERE id_estacion = '1111-FESA';
+-- DML ESTACIONES
+INSERT INTO estaciones (id_estacion, nombre_estacion, zona) VALUES ('9999-TEST', 'Estación FES', 'CDMX');
+UPDATE estaciones SET zona = 'Naucalpan' WHERE id_estacion = '9999-TEST';
+DELETE FROM estaciones WHERE id_estacion = '9999-TEST';
 
--- UPDATE
-UPDATE bicicletas SET
-	estatus = 'Mantenimiento'
-	WHERE bici = '5200118';
+-- DML BICICLETAS
+INSERT INTO bicicletas (bici, tipo_bicicleta, estatus) VALUES ('9999999', 'Eléctrica', 'Activa');
+UPDATE bicicletas SET estatus = 'Mantenimiento' WHERE bici = '9999999';
+DELETE FROM bicicletas WHERE bici = '9999999';
 
-SELECT * FROM bicicletas WHERE bici = '5200118';
+-- DML DIM_USUARIOS
+INSERT INTO dim_usuarios (id_perfil, genero, edad) VALUES (999999, 'M', 99);
+UPDATE dim_usuarios SET edad = 100 WHERE id_perfil = 999999;
+DELETE FROM dim_usuarios WHERE id_perfil = 999999;
 
--- DELETE
-DELETE FROM estaciones
-WHERE id_estacion = '1111-FESA';
+-- DML DIM_FECHAS
+INSERT INTO dim_fechas (fecha, anio, mes, dia) VALUES ('2099-01-01', 2099, 1, 1);
+UPDATE dim_fechas SET anio = 2100 WHERE fecha = '2099-01-01';
+DELETE FROM dim_fechas WHERE fecha = '2099-01-01';
 
-SELECT * FROM estaciones WHERE id_estacion = '1111-FESA';
+-- DML  DIM_TIEMPOS
+INSERT INTO dim_tiempos (hora, franja_horaria) VALUES ('25:00:00', 'Madrugada');
+UPDATE dim_tiempos SET franja_horaria = 'Noche' WHERE hora = '25:00:00';
+DELETE FROM dim_tiempos WHERE hora = '25:00:00';
 
--- SELECT CON JOIN
+-- DML HISTORICO_VIAJES (Particionada)
+SET SQL_SAFE_UPDATES = 0;
 
+INSERT INTO historico_viajes (genero_usuario, edad_usuario, bici, ciclo_estacion_retiro, fecha_retiro, hora_retiro) 
+VALUES ('M', 25, '12345', '1', '2025-12-31', '12:00:00');
+UPDATE historico_viajes SET edad_usuario = 26 WHERE bici = '12345' AND fecha_retiro = '2025-12-31';
+DELETE FROM historico_viajes WHERE bici = '12345' AND fecha_retiro = '2025-12-31';
+
+SET FOREIGN_KEY_CHECKS = 0;
+-- DML para VIAJES 
+INSERT INTO viajes (genero_usuario, edad_usuario, bici, ciclo_estacion_retiro, fecha_retiro, hora_retiro) 
+VALUES ('F', 30, '54321', '2', '2025-12-31', '08:00:00');
+DELETE FROM viajes WHERE bici = '54321' AND fecha_retiro = '2025-12-31';
 SELECT 
     e.nombre_estacion AS Estacion_Origen,
     g.descripcion AS Genero,
     t.franja_horaria AS Horario,
     COUNT(v.bici) AS Total_Viajes
 FROM viajes v
-
 JOIN estaciones e ON v.ciclo_estacion_retiro = e.id_estacion
 JOIN cat_generos g ON v.genero_usuario = g.codigo_genero
 JOIN dim_tiempos t ON v.hora_retiro = t.hora
-
-WHERE g.descripcion = 'Femenino' 
-  AND t.franja_horaria = 'Mañana'
-
+WHERE g.descripcion = 'Femenino' AND t.franja_horaria = 'Mañana'
 GROUP BY e.nombre_estacion, g.descripcion, t.franja_horaria
 ORDER BY Total_Viajes DESC
 LIMIT 5;
+
+SET FOREIGN_KEY_CHECKS = 1;
+SET SQL_SAFE_UPDATES = 1;
