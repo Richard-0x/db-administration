@@ -5,7 +5,7 @@
    
    https://drive.google.com/drive/folders/1ogxHLMOxqbDtDr0JjjXlNfBxNryxPC8Q?usp=sharing
 ------------------------------------------------------------------------------------------------------------------------------------------------ */
--- Query Teach Solitións.
+-- Query Teach Solutións.
 -- Movilidad: Ecobici CDMX.
 -- -----------------------------------------------------TEAM 6-----------------------------------------------------------------------------------
 -- Estrada Romero Meliza Edith
