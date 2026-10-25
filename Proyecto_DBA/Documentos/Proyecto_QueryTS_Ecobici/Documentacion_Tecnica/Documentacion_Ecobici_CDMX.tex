@@ -1,0 +1,1091 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish, es-tabla]{babel}
+\usepackage{lmodern}
+\usepackage{csquotes}
+\usepackage{amsmath, amsfonts, amssymb, amsthm}
+
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{float}
+
+\usepackage[
+    left=2.54cm,
+    right=2.54cm,
+    top=2.54cm,
+    bottom=2.54cm
+]{geometry}
+
+\usepackage{xcolor}
+\usepackage[most]{tcolorbox}
+\usepackage{soul}
+
+\usepackage{listings}
+\usepackage{upquote}
+
+\lstset{
+    basicstyle=\footnotesize\ttfamily,
+    frame=single,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    numbersep=8pt,
+    inputencoding=utf8,
+    extendedchars=true,
+    breaklines=true,
+    breakatwhitespace=false,
+    showstringspaces=false,
+    keepspaces=true,
+    keywordstyle=\color{blue},
+    commentstyle=\color{green!50!black},
+    stringstyle=\color{red!70!black},
+    tabsize=4
+}
+\usepackage{tikz}
+
+\usetikzlibrary{
+    arrows.meta,
+    positioning,
+    automata
+}
+
+\usepackage[
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    urlcolor=blue!60!black,
+    citecolor=blue!50!black
+]{hyperref}
+
+%================================================
+% CAJA DE EJERCICIOS
+%================================================
+\newtcbtheorem[number within=section]
+{ejercicio}{Ejercicio}{
+    enhanced,
+    sharp corners,
+    boxrule=0pt,
+    leftrule=5pt,
+    colframe=gray!30!black,
+    colback=gray!5!white,
+    coltitle=white,
+    fonttitle=\bfseries,
+    separator sign={.\ },
+    before skip=10pt,
+    after skip=10pt
+}{ej}
+
+%================================================
+% CAJA DE TEOREMAS
+%================================================
+\newtcbtheorem[number within=section]
+{mytheo}{Teorema}{
+    enhanced,
+    sharp corners,
+    boxrule=0pt,
+    leftrule=5pt,
+    colframe=blue!40!black,
+    colback=blue!5!white,
+    coltitle=white,
+    fonttitle=\bfseries,
+    separator sign={.\ },
+    before skip=10pt,
+    after skip=10pt
+}{th}
+
+%================================================
+% CAJA DE ALERTA
+%================================================
+\newtcolorbox{alerta}[1]{
+    enhanced,
+    sharp corners,
+    boxrule=0pt,
+    leftrule=5pt,
+    colframe=red!40!black,
+    colback=red!5!white,
+    coltitle=white,
+    fonttitle=\bfseries,
+    title={#1},
+    before skip=10pt,
+    after skip=10pt
+}
+
+%================================================
+% CAJA DE NOTAS
+%================================================
+\newtcolorbox{nota}[1]{
+    enhanced,
+    sharp corners,
+    boxrule=0pt,
+    leftrule=5pt,
+    colframe=orange!40!black,
+    colback=yellow!5!white,
+    coltitle=white,
+    fonttitle=\bfseries,
+    title={#1},
+    before skip=10pt,
+    after skip=10pt
+}
+
+
+\begin{document}
+
+\begin{titlepage}
+    \centering
+
+    %========================================
+    % UNIVERSIDAD
+    %========================================
+    {\huge\textbf{Universidad Nacional Autónoma de México}}
+
+    \vspace{0.3cm}
+    \rule{\linewidth}{2mm}
+
+    \vspace{0.3cm}
+    {\large\textbf{Facultad de Estudios Superiores Acatlán}}
+
+    \vspace{0.8cm}
+
+    %========================================
+    % LOGOTIPOS
+    %========================================
+    \noindent
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \IfFileExists{../../../../Archivos/Imagenes_Logos/acatlan.png}{
+            \includegraphics[
+                width=5cm,
+                height=4cm,
+                keepaspectratio
+            ]{../../../../Archivos/Imagenes_Logos/acatlan.png}
+        }{
+            \textit{Logotipo FES Acatlán}
+        }
+    \end{minipage}
+    \hfill
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \IfFileExists{../../../Archivos/Imagen/LOGO_DBA.png}{
+            \includegraphics[
+                width=5cm,
+                height=4cm,
+                keepaspectratio
+            ]{../../../Archivos/Imagen/LOGO_DBA.png}
+        }{
+            \textit{Logotipo DBA}
+        }
+    \end{minipage}
+
+    \vspace{0.8cm}
+
+    %========================================
+    % CARRERA Y TÍTULO
+    %========================================
+ 
+
+    \vspace{0.8cm}
+    {\huge\textbf{Database Administrator}}
+
+    \vspace{0.4cm}
+    \rule{\linewidth}{1mm}
+
+    \vspace{0.4cm}
+
+    %========================================
+    % PROYECTOS
+    %========================================
+    {\Large\textbf{Empresa - Proyecto}}
+
+    \vspace{0.3cm}
+    {\large\textit{Query Teach Solutions}}
+
+    \vspace{0.2cm}
+    {\large\textit{Movilidad: Ecobici CDMX}}
+
+    \vspace{6cm}
+
+    %========================================
+    % INTEGRANTES
+    %========================================
+    \rule{\linewidth}{0.5mm}
+
+    \vspace{0.3cm}
+    {\large\textbf{Integrantes}}
+
+    \vspace{0.3cm}
+    {\large Estrada Romero Meliza Edith}
+
+    \vspace{0.15cm}
+    {\large Ricardo López Ramírez}
+
+    \vspace{0.15cm}
+    {\large Ruiz Sánchez Emiliano}
+
+    \vspace{0.15cm}
+    {\large Cabrera Trejo José Luis}
+
+    \vspace{0.5cm}
+    \rule{\linewidth}{0.5mm}
+
+    \vspace{0.5cm}
+
+    %========================================
+    % FECHA
+    %========================================
+    {\small Actualización: \today}
+
+\end{titlepage}
+
+
+%================================================
+% ÍNDICE
+%================================================
+\pagenumbering{roman}
+
+\tableofcontents
+
+\clearpage
+
+%================================================
+% CONTENIDO
+%================================================
+\pagenumbering{arabic}
+\setcounter{page}{1}
+
+\section{Tema y Descripción del Proyecto}
+
+\subsection{Descripción General}
+\textbf{Movilidad Urbana: Análisis del Sistema Ecobici en la Ciudad de México}, 
+consiste en el diseño, estructuración e implementación de una base de datos relacional 
+analítica enfocada en la red de transporte de bicicletas de la CDMX. Un diseño de arquitectura basada en 
+un Modelo de Estrella, el proyecto procesa y normaliza un volumen masivo de datos transaccionales 
+correspondientes a los años 2024, 2025 y 2026. 
+
+\subsection{Elección del Tema}
+Se seleccionó este tema porque el sistema Ecobici es fundamental de la movilidad sustentable y el desarrollo
+urbano en la capital del país. 
+La Data proporcionada por Ecobici CDMX, genera un volumen de información masivo diariamente. 
+Esto nos presentó un escenario ideal, para aplicar técnicas avanzadas de administración de bases de datos. 
+Resolver las limitantes de particionamiento del motor de bases de datos mientras se garantizaba un 
+100\% de integridad referencial, demuestra el nivel técnico requerido para gestionar 
+arquitecturas de datos.
+
+\subsection{Información a Visualizar en la Base de Datos}
+La base de datos está estructurada para visualizar la interacción entre los usuarios y el sistema de movilidad mediante las siguientes dimensiones y métricas:
+\begin{itemize}
+    \item \textbf{Hechos de Movilidad:} Más de 6.5 millones de registros operativos en la tabla principal y más de 30 millones en el histórico, detallando cada viaje realizado.
+    \item \textbf{Perfiles Demográficos:} Género y edad de los usuarios, permitiendo segmentar el comportamiento del consumidor.
+    \item \textbf{Dimensión Espacial:} Catálogo de estaciones de retiro y arribo, incluyendo su nomenclatura y zonificación, para trazar las rutas urbanas.
+    \item \textbf{Dimensión Temporal:} Fechas exactas y franjas horarias (Mañana, Tarde, Noche, Madrugada) para identificar horas pico y valles de demanda.
+    \item \textbf{Inventario Físico:} Estatus y tipo de las bicicletas utilizadas.
+\end{itemize}
+
+
+\begin{table}[h]
+\centering
+\caption{Volumetría de Datos del Proyecto}
+\vspace{0.2cm}
+\begin{tabular}{|l|c|l|}
+\hline
+\textbf{Tabla / Entidad} & \textbf{Tipo en Modelo} & \textbf{Volumen Aproximado} \\ \hline
+Historico Viajes & Tabla Particionada & $> 30,000,000$ registros \\ \hline
+Viajes (2025-2026) & Tabla de Hechos & $> 6,500,000$ registros \\ \hline
+Estaciones & Catálogo / Dimensión & 683 estaciones únicas \\ \hline
+Tiempos & Dimensión Temporal & 86,400 segundos \\ \hline
+\end{tabular}
+\label{tab:volumetria}
+\end{table}
+
+\subsection{Finalidad Principal}
+La finalidad principal de esta base de datos no es únicamente el almacenamiento, es servir  
+como un repositorio analítico. 
+El objetivo es transformar los datos en información estratégica que permita a la toma de decisiones 
+optimizar la logística del sistema.
+Mediante las sentencias DML, la base de datos es capaz de responder 
+preguntas de negocio en segundos.
+Ejemplo: la saturación de las estaciones por franjas horarias, 
+los patrones de ruta más frecuentes según el género del usuario.
+
+\newpage
+
+\section{Diagrama Entidad-Relación}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../Diagrama_EER_Ecobici.pdf}
+    \caption{Diagrama Entidad-Relación (Modelo de Estrella) estructurado para el análisis.}
+    \label{fig:diagrama_eer}
+\end{figure}
+
+
+\newpage
+
+\section{Enlace a Repositorio GitHub.}
+
+\vspace{5mm}
+
+\begin{center}
+    \href{https://github.com/Richard-0x/db-administration}{
+        \fbox{\rule{0pt}{12pt}\hspace{8pt}\textbf{Repositorio GitHub}\hspace{8pt}}
+    }
+\end{center}
+
+\section{Enlace Google Drive}
+
+\vspace{5mm}
+
+\begin{center}
+    \href{https://drive.google.com/drive/folders/1ogxHLMOxqbDtDr0JjjXlNfBxNryxPC8Q?usp=sharing}{
+        \fbox{\rule{0pt}{12pt}\hspace{8pt}\textbf{DATA DRIVE}\hspace{8pt}}
+    }
+\end{center}
+
+
+%%---------------------JOSE----------------------------------------
+\newpage 
+\section{Estimación Teórica y Proyección de Espacio en Disco.}
+\subsection{1. Tamaño por tipo de dato y fila (Row Size)}
+Para realizar la estimación de espacio, se sumaron los bytes requeridos por cada columna de las tablas principales (\texttt{viajes}, \texttt{historico\_viajes}, \texttt{dim\_usuarios}, \texttt{estaciones}, etc.), utilizando los pesos estándar de MySQL: \texttt{INT} = 4 bytes, \texttt{DATETIME} = 5 bytes, \texttt{SMALLINT} = 2 bytes y \texttt{TINYINT} = 1 byte.
+
+A esto se sumó la sobrecarga (\textit{overhead}) interna de InnoDB: encabezado de fila ($\sim$5 bytes), ID de transacción (6 bytes) y puntero de rollback (7 bytes). Considerando el tamaño por defecto de la página InnoDB (16 KB) y un \textit{fill factor} de 15/16, se determinó que la fila promedio ocupa aproximadamente \textbf{70 bytes} (incluyendo índices B-Tree de las Claves Primarias y Foráneas).
+
+\subsection{2. Cálculo del Espacio de Carga Inicial}
+Con la fila promedio de 70 bytes, se proyectó la carga inicial antes de la inyección física de datos:
+\begin{itemize}
+    \item \textbf{Carga Inicial de \texttt{historico\_viajes}} ($\sim$30,000,000 registros): $\sim$2.1 GB de datos + $\sim$1.2 GB de índices = \textbf{$\sim$3.3 GB}.
+    \item \textbf{Carga Inicial de \texttt{viajes}} ($\sim$6,500,000 registros): $\sim$455 MB de datos + $\sim$260 MB de índices = \textbf{$\sim$715 MB}.
+    \item \textbf{Catálogos y Dimensiones:} \textbf{$\sim$15 MB}.
+    \item \textbf{Total Carga Inicial:} \textbf{$\sim$4.03 GB}.
+\end{itemize}
+
+\subsection{3. Simulación y Proyección de Crecimiento}
+Asumiendo un promedio de 800,000 viajes mensuales nuevos en la CDMX y un incremento anual estimado del 10\% debido a nuevas estaciones. El crecimiento mensual proyectado es: 800,000 $\times$ 100 bytes (datos + índices) $\approx$ 80 MB/mes (lo que equivale a $\sim$0.96 GB/año).
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|}
+\hline
+\textbf{Periodo} & \textbf{Almacenamiento Estimado} \\ \hline
+Año 1 (Actual / Carga Inicial) & 4.03 GB \\ \hline
+Año 2 (+10\% uso) & $\sim$5.08 GB \\ \hline
+Año 3 (+20\% uso) & $\sim$6.24 GB \\ \hline
+Año 5 (+40\% uso) & $\sim$8.95 GB \\ \hline
+\end{tabular}
+\caption{Tabla de Proyección a 5 Años}
+\end{table}
+
+
+
+%%---------------------JOSE----------------------------------------
+
+%%-------------------EMILIANO----------------------------------
+
+\newpage 
+\section{Consulta al Diccionario de Datos y Comparación de Almacenamiento.}
+\subsection{Justificación Teórica}
+En MySQL 8.0, los metadatos se almacenan de forma centralizada y transaccional en el Diccionario de Datos. Medir los archivos físicos (como \texttt{.ibd}) directamente desde el sistema operativo resulta impreciso debido a dos factores:
+\begin{itemize}
+    \item \textbf{Asignación por Extents:} El motor InnoDB reserva espacio en bloques completos, por lo que el archivo en disco siempre será más grande que los datos reales almacenados.
+    \item \textbf{Fragmentación:} El espacio de los registros eliminados no se devuelve inmediatamente al sistema operativo.
+\end{itemize}
+Por ello, consultar el \texttt{INFORMATION\_SCHEMA} permite al administrador medir el espacio lógico real, exacto y en uso.
+
+\subsection{Desarrollo de Consultas SQL}
+
+\textbf{A. Tamaño total de la Base de Datos}
+\begin{lstlisting}
+    SELECT table_schema AS Base_de_Datos,
+    ROUND(SUM(data_length + index_length) / 1024 / 1024, 2) AS Tamano_MB
+    FROM information_schema.tables
+    WHERE table_schema = 'DB_Ecobici_CDMX'
+    GROUP BY table_schema;
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../../../Archivos/Imagen/img_total.png}
+    \caption{Tamaño total de la base de datos.}
+\end{figure}
+
+Como se observa en el resultado, el tamaño lógico total del esquema \texttt{DB\_Ecobici\_CDMX} es de \textbf{1580.91 MB} (aproximadamente 1.58 GB). Este valor representa la suma exacta de los datos puros más el peso de los índices, confirmando que la carga masiva de los registros se completó exitosamente.
+
+\vspace{0.5cm}
+\textbf{B. Tamaño individual por tabla e índice}
+\begin{lstlisting}[language=SQL]
+SELECT table_name AS `Tabla`,
+       ROUND(data_length / 1024 / 1024, 2) AS `Datos_MB`,
+       ROUND(index_length / 1024 / 1024, 2) AS `Indices_MB`,
+       table_rows AS `Numero_Registros`
+FROM information_schema.tables
+WHERE table_schema = 'DB_Ecobici_CDMX'
+ORDER BY (data_length + index_length) DESC;
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../../../Archivos/Imagen/img_tablas.png}
+    \caption{Desglose de peso por datos e índices de cada tabla.}
+\end{figure}
+
+\vspace{0.5cm}
+\textbf{C. Consulta de Tablespaces y archivos .ibd}
+\begin{lstlisting}[language=SQL]
+SELECT TABLESPACE_NAME AS `Particion_Tablespace`,
+       FILE_NAME AS `Ruta_Archivo_ibd`,
+       ROUND(TOTAL_EXTENTS * EXTENT_SIZE / 1024 / 1024, 2) AS `Espacio_Asignado_MB`,
+       ROUND(FREE_EXTENTS * EXTENT_SIZE / 1024 / 1024, 2) AS `Espacio_Libre_MB`
+FROM information_schema.FILES
+WHERE TABLESPACE_NAME LIKE 'DB_Ecobici_CDMX/historico_viajes%';
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.8\textwidth]{../../../Archivos/Imagen/img_particiones.png}
+    \caption{Espacio físico asignado vs libre en las particiones de la tabla histórica.}
+\end{figure}
+
+\subsection{Matriz de Comparación}
+El siguiente cuadro contrasta la estimación matemática contra la medición real del Diccionario de Datos.
+
+\begin{table}[H]
+\centering
+\begin{tabular}{|l|c|c|c|c|}
+\hline
+\textbf{Tabla} & \textbf{Filas (Aprox)} & \textbf{Teórico (MB)} & \textbf{Real (MB)} & \textbf{Diferencia} \\ \hline
+historico\_viajes & 19,689,093 & 3379.20 & 1203.89 & -2175.31 \\ \hline
+viajes & 6,349,597 & 715.00 & 372.94 & -342.06 \\ \hline
+Catálogos (Suma) & 82,683 & 15.00 & 4.10 & -10.90 \\ \hline
+\end{tabular}
+\caption{Comparativa Estimación Teórica vs Diccionario de Datos}
+\end{table}
+
+\textbf{Análisis:} El tamaño real resultó menor a la estimación teórica principalmente porque el modelo matemático calculó la tabla histórica sobre 30 millones de registros, mientras que la carga física procesó aproximadamente 20 millones.
+%%-------------------EMILIANO----------------------------------
+
+\newpage
+
+\section{Alta Disponibilidad, Replicación y Casos de Failover.}
+\subsection{Servidores Primario, Réplica y Balanceador usando Docker.}
+
+\subsubsection{Creando el entorno}
+
+Terminal de WSL (Ubuntu). Crear la estructura de carpetas exacta que necesitamos.
+
+\begin{lstlisting}[language=bash, caption={Creación de la estructura de directorios}]
+mkdir -p ~/proyecto_ecobici/haproxy \
+         ~/proyecto_ecobici/master/conf/mysql.conf.d \
+         ~/proyecto_ecobici/slave/conf/mysql.conf.d
+\end{lstlisting}
+
+\begin{lstlisting}[language=bash]
+cd ~/proyecto_ecobici
+\end{lstlisting}
+
+\subsubsection{Visual Studio Code}
+
+En un nuevo archivo en la raíz de la carpeta llámado docker-compose.yml.
+
+
+\subsubsection{Crea el archivo del Balanceador de Carga}
+
+En VS Code, en la carpeta haproxy, se crea un archivo llamado haproxy.cfg.
+
+Terminal de terminal de WSL en caso se problemas por caracteres
+
+\begin{lstlisting}
+    cat << 'EOF' > haproxy/haproxy.cfg
+global
+    log stdout format raw local0
+    maxconn 1000
+
+defaults
+    log     global
+    mode    tcp
+    option  tcplog
+    timeout connect 5s
+    timeout client  300s
+    timeout server  300s
+
+frontend mysql_frontend
+    bind *:3306
+    default_backend mysql_backend
+
+backend mysql_backend
+    mode tcp
+    option mysql-check user root
+    server master mysql-master:3306 check inter 2000 rise 2 fall 3
+    server slave mysql-slave:3306 check backup inter 2000 rise 2 fall 3
+
+listen stats
+    bind *:8404
+    mode http
+    stats enable
+    stats uri /stats
+    stats refresh 5s
+EOF
+\end{lstlisting}
+
+\subsubsection{Iniciar los servidores}
+
+\begin{lstlisting}
+    docker compose up -d
+\end{lstlisting}
+
+\begin{lstlisting}
+    http://localhost:8404/stats.
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/LocalHost_Docker.png}
+    \caption{Localhost}
+\end{figure}
+
+
+\newpage
+\subsection{Configuración de Permisos para HAProxy (Health Checks)}
+
+Se creó un usuario dedicado sin contraseña y sin privilegios, cuyo único propósito es responder al ping del balanceador.
+
+\vspace{2mm}
+
+\textbf{1. Actualizar la configuración de HAProxy}
+En el archivo \texttt{haproxy.cfg}, se sustituyó el usuario \texttt{root}:
+\begin{lstlisting}
+    option mysql-check user root
+    
+    option mysql-check user haproxy_check
+\end{lstlisting}
+
+\vspace{2mm}
+
+\textbf{2. Crear el usuario en los motores MySQL}
+Debido a incompatibilidades de encriptación entre HAProxy y MySQL 8.0, se forzó el método de autenticación \texttt{mysql\_native\_password} al crear el usuario en ambos contenedores.
+
+\textit{Para el Maestro:}
+\begin{lstlisting}[language=bash]
+docker exec -it mysql-master mysql -uroot -p-e "CREATE USER 'haproxy_check'@'%' IDENTIFIED WITH mysql_native_password BY ''; FLUSH PRIVILEGES;"
+\end{lstlisting}
+
+\textit{Para la Réplica:}
+\begin{lstlisting}[language=bash]
+docker exec -it mysql-slave mysql -uroot -p -e "CREATE USER 'haproxy_check'@'%' IDENTIFIED WITH mysql_native_password BY ''; FLUSH PRIVILEGES;"
+\end{lstlisting}
+
+\textbf{3. Aplicar los cambios en el Balanceador}
+Se reinició el servicio para que HAProxy adoptara el nuevo usuario:
+\begin{lstlisting}[language=bash]
+docker compose restart haproxy
+\end{lstlisting}
+
+Tras la ejecución, el panel de estadísticas en \texttt{http://localhost:8404/stats} confirmó que ambos nodos pasaron a estado activo (UP).
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/LocalHost_Docker_2.png}
+    \caption{Localhost acceso a la base de datos (Estado UP)}
+\end{figure}
+
+\newpage
+\subsection{Configuración de Replicación Maestro-Esclavo (GTID)}
+
+Para el cumplimiento del diseño de Alta Disponibilidad, se implementó replicación asíncrona mediante GTID (Global Transaction Identifier). GTID es el estándar moderno en MySQL que facilita la sincronización, ya que cada transacción recibe un ID único y la réplica sabe exactamente qué eventos procesar sin requerir posiciones exactas de archivos \texttt{binlog}.
+
+\subsubsection{Habilitar GTID y Replicación (Inyección vía Docker Compose)}
+
+Debido a restricciones de seguridad en los permisos de volúmenes compartidos entre Windows y WSL (donde el motor ignora archivos de configuración con permisos demasiado abiertos), se optó por prescindir de los archivos físicos \texttt{mysqld.cnf}.
+
+En su lugar, las variables de entorno para habilitar GTID se inyectaron directamente en la definición de cada contenedor dentro del archivo \texttt{docker-compose.yml} utilizando la directiva \texttt{command}.
+
+\vspace{2mm}
+
+\textbf{Configuración del Maestro en docker-compose.yml}
+\begin{lstlisting}
+    command: --server-id=1 --log-bin=mysql-bin --binlog-format=ROW --gtid-mode=ON --enforce-gtid-consistency=ON
+\end{lstlisting}
+
+\vspace{2mm}
+
+\textbf{Configuración de la Réplica en docker-compose.yml}
+\begin{lstlisting}
+    command: --server-id=2 --gtid-mode=ON --enforce-gtid-consistency=ON --read-only=1
+\end{lstlisting}
+
+\subsubsection{Ejecución de la Arquitectura Limpia}
+Para purgar configuraciones residuales y metadatos corruptos, se procedió a destruir el entorno anterior (incluyendo los volúmenes físicos de datos con el flag \texttt{-v}) y a instanciar la infraestructura en limpio:
+
+\begin{lstlisting}[language=bash]
+docker compose down -v
+docker compose up -d
+\end{lstlisting}
+
+\subsubsection{Comandos de Replicación SQL}
+
+\textbf{1. Obtener la IP interna del servidor Maestro}
+La Réplica requiere enlazarse directamente a la dirección IP privada del contenedor Maestro dentro de la red virtual de Docker (\texttt{ecobici-net}).
+
+\begin{lstlisting}[language=bash]
+docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mysql-master
+\end{lstlisting}
+\textit{Resultado:} \texttt{172.18.xxx}
+
+\vspace{2mm}
+
+\textbf{2. Crear el usuario de replicación en el Maestro}
+\begin{lstlisting}[language=bash]
+docker exec -it mysql-master mysql -uroot -p_xxxx
+\end{lstlisting}
+
+\begin{lstlisting}[language=SQL]
+CREATE USER 'replica_user'@'%' IDENTIFIED WITH mysql_native_password BY 'xxx';
+GRANT REPLICATION SLAVE ON *.* TO 'replica_user'@'%';
+FLUSH PRIVILEGES;
+EXIT;
+\end{lstlisting}
+
+\vspace{2mm}
+\textbf{3. Conectar la Réplica al Maestro}
+\begin{lstlisting}[language=bash]
+docker exec -it mysql-slave mysql -uroot -p_xxx
+\end{lstlisting}
+
+\begin{lstlisting}[language=SQL]
+CHANGE MASTER TO
+  MASTER_HOST='xxx',
+  MASTER_USER='replica_user',
+  MASTER_PASSWORD='xxx',
+  MASTER_AUTO_POSITION=1;
+START SLAVE;
+\end{lstlisting}
+
+\subsubsection{Resolución de Incidentes: Error 1396 y Conflicto GTID}
+Durante el proceso de conexión (\texttt{START SLAVE;}), el \textit{Coordinator worker} detuvo la clonación arrojando el error \texttt{Last\_SQL\_Errno: 1396} (\texttt{Operation CREATE USER failed}). Esto ocurrió porque el servidor esclavo intentó replicar una transacción DDL de creación de usuario que ya existía físicamente en su propio disco.
+
+Para desatascar el flujo sin reconstruir el entorno, se aplicó una técnica avanzada de DBA inyectando un GTID vacío correspondiente a la transacción conflictiva, instruyendo al motor a omitirla y continuar con la cola de eventos.
+
+\begin{lstlisting}[language=SQL]
+STOP SLAVE;
+SET GTID_NEXT="a8d9d588-cea3-11f1-ad19-0a3abf4f4181:7";
+BEGIN;
+COMMIT;
+SET GTID_NEXT="AUTOMATIC";
+START SLAVE;
+\end{lstlisting}
+
+Tras la corrección, la validación final mediante \texttt{SHOW SLAVE STATUS\textbackslash G} confirmó la sincronización exitosa de ambos hilos:
+\begin{itemize}
+    \item \texttt{Slave\_IO\_Running: Yes}
+    \item \texttt{Slave\_SQL\_Running: Yes}
+\end{itemize}
+
+\newpage
+\subsection{Cargar base de datos ECOBICI}
+
+El contenedor mysql-master es un sistema operativo Linux aislado. No tiene disco C: ni identifica la ruta:
+\begin{lstlisting}
+    C:\ProgramData\MySQL\MySQL Server 8.0\Uploads.
+\end{lstlisting}
+
+para lo LOAD DATA INFILE del script.
+
+\vspace{2mm}
+
+Pasaremos los archivos de Windows al entorno de Linux en Docker y se modificaran las rutas.
+
+\subsubsection{Copiar los archivos CSV al contenedor Linux}
+
+\begin{lstlisting}
+    docker cp "/mnt/c/ProgramData/MySQL/MySQL Server 8.0/Uploads/." mysql-master:/var/lib/mysql-files/
+\end{lstlisting}
+
+\subsubsection{Mover y modificar el script SQL}
+
+Mover el archivo \texttt{QueryTS\_Ecobici\_CDMX.sql} a la carpeta del proyecto en Linux.
+
+\begin{lstlisting}
+\\wsl$\Ubuntu\home\ricardo\proyecto_ecobici.
+\end{lstlisting}
+
+\begin{lstlisting}
+Buscar y Reemplazar
+Buscar
+C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/
+Reemplazar
+/var/lib/mysql-files/
+\end{lstlisting}
+
+\subsubsection{Inyectar la base de datos}
+
+En la terminal de Linux ejecuta el comando para inyectar todo el script directamente al maestro:
+
+\begin{lstlisting}
+    docker exec -i mysql-master mysql -uroot -p_xxxx DB_Ecobici_CDMX < QueryTS_Ecobici_CDMX.sql
+\end{lstlisting}
+
+\begin{alerta}{Importante}
+Como este script carga más de 6 millones de registros y construye llaves foráneas e índices, el comando se quedará pensando durante unos 15 a 20 minutos. No lo canceles.
+\end{alerta}
+
+Si quieres ver cómo tu computadora está trabajando, puedes abrir una nueva pestaña o ventana de terminal en WSL y ejecutar el comando. Ahí verás en tiempo real cómo el contenedor mysql-master está utilizando al máximo tu CPU y memoria RAM.
+
+\begin{lstlisting}
+    docker stats.
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Docker_stats.png}
+    \caption{Estatus carga}
+\end{figure}
+
+\newpage
+\section{Crear Cuenta Google Cloud}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Acceso_GCP.png}
+    \caption{GCP}
+\end{figure}
+
+\newpage
+
+\subsection{Crear Instancias}
+
+\begin{itemize}
+    \item Ingresa a la Consola de Google Cloud.
+    \item En el menú de navegación ve a Compute Engine > Instancias de VM.
+    \item Haz clic en Crear instancia (Create instance).
+    \item Configura los siguientes parámetros:
+        Nombre: nodo-respaldo-ecobici
+        Región: Selecciona us-central1 (Iowa)
+        Tipo de máquina: Propósito general, serie E2, selecciona e2-micro (Es la opción más barata).
+\end{itemize}
+
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Configuracion_MV.png}
+    \caption{Cofg mv}
+\end{figure}
+
+
+\begin{itemize}
+    \item Disco de arranque (Boot disk):
+    Haz clic en Cambiar.
+    Sistema Operativo: Selecciona Ubuntu.
+    Versión: Selecciona Ubuntu 24.04 LTS.
+\end{itemize}
+
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/SO_MV.png}
+    \caption{Cof SO}
+\end{figure}
+
+Tamaño: 10 GB (por defecto).
+Firewall: Marca la casilla Permitir tráfico HTTP y Permitir tráfico HTTPS. 
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Firewall_MV.png}
+    \caption{Firewall}
+\end{figure}
+
+Haz clic en el botón azul Crear al final de la página.
+
+\newpage
+
+\subsubsection{Regla de Firewall adicional}
+Las casillas HTTP/HTTPS que se marcaron abren los puertos 80 y 443. 
+Pero necesitamos abrir los puertos específicos de la bases de datos 
+(3306 y 8404).
+
+\begin{itemize}
+    \item En el submenú que se despliega, haz clic en Firewall.
+    \item En la parte superior central de la pantalla de Firewall, busca y haz clic en el botón que dice CREAR REGLA DE FIREWALL (Create Firewall Rule).
+    \item Nombre: allow-haproxy
+    \item Dirección del tráfico: Entrada
+    \item Acción: Permitir
+    \item Destinos: Todas las instancias de la red
+    \item Rangos IPv4 de origen: 0.0.0.0/0
+    \item Puertos TCP: 3306,8404
+\end{itemize}
+
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Firewall_Habilitar_1.png}
+    \caption{Firewall}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Firewall_Habilitar_2.png}
+    \caption{Firewall}
+\end{figure}
+
+\vspace{2mm}
+
+\newpage
+
+\subsubsection{Maquina Virtual}
+
+Maquina Virtual: Se observa la terminal de Ubuntu 2404 LTS conectada vá
+SSH
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/MV_SSH.png}
+    \caption{Firewall}
+\end{figure}
+
+\subsubsection{Instalar Docker y Docker Compose}
+
+Se instalara Docker en la maquina virtual y se caragra el proyecto
+
+Primero actualizaremos los paquetes del sistema y luego instalaremos el motor de Docker.
+
+\begin{lstlisting}
+    sudo apt update && sudo apt upgrade -y
+    sudo apt install docker.io docker-compose-v2 -y
+\end{lstlisting}
+
+\subsubsection{Dar permisos a tu usuario}
+
+Para no tener que escribir sudo antes de cada comando de Docker, 
+añadiremos tu usuario al grupo de Docker:
+
+\begin{lstlisting}
+    sudo usermod -aG docker $USER
+    newgrp docker
+\end{lstlisting}
+
+\subsubsection{Crear la estructura del proyecto}
+
+Crearemos las mismas carpetas que estan el localhost.
+
+\begin{lstlisting}
+    mkdir -p ~/proyecto_ecobici/haproxy
+    cd ~/proyecto_ecobici
+\end{lstlisting}
+
+\subsubsection{Instalacion editor de texto nano}
+
+\begin{lstlisting}
+    sudo apt install nano -y
+\end{lstlisting}
+
+\vspace{2mm}
+
+\subsubsection{Crear docker-compose.yml}
+Arquitectura con GTID inyectado.
+\begin{lstlisting}
+    nano docker-compose.yml
+\end{lstlisting}
+
+\subsubsection{Crear haproxy.cfg}
+La configuración del balanceador de carga dentro de su respectiva carpeta.
+\begin{lstlisting}
+    nano haproxy/haproxy.cfg
+\end{lstlisting}
+
+\subsubsection{Arrancar la infraestructura en la nube}
+Con los archivos listos, ejecuta este comando para descargar las imágenes y encender los servidores de base de datos.
+\begin{lstlisting}
+    docker compose up -d
+\end{lstlisting}
+
+\vspace{2mm}
+
+La arquitectura esta completa.
+\begin{itemize}
+    \item Maestro
+    \item Esclavo
+    \item HAProxy
+\end{itemize}
+Estan levantados los contenedores y de forma estable en la maquina 
+virtual de GCP.
+
+\subsubsection{Configuración de Permisos para HAProxy (Health Checks)}
+
+La infraestructura funciona, los nodos de MySQL rechazan 
+la conexión del balanceador porque todavía no se crea 
+el usuario que HAProxy usa para verificar la salud de los 
+servidores haproxy check.
+
+Para el Maestro:
+\begin{lstlisting}
+    docker exec -it mysql-master mysql -uroot -p_ -e "DROP USER IF EXISTS 'haproxy_check'@'%'; CREATE USER 'haproxy_check'@'%' IDENTIFIED WITH mysql_native_password BY ''; FLUSH PRIVILEGES;"
+\end{lstlisting}
+
+Para la Réplica:
+\begin{lstlisting}
+   docker exec -it mysql-slave mysql -uroot -p_ -e "DROP USER IF EXISTS 'haproxy_check'@'%'; CREATE USER 'haproxy_check'@'%' IDENTIFIED WITH mysql_native_password BY ''; FLUSH PRIVILEGES;"
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/HAProxy_report_UP.png}
+    \caption{HAProxy}
+\end{figure}
+
+\newpage
+
+\subsubsection{Replicacion GTID}
+IP interna del Maestro
+\begin{lstlisting}
+   docker inspect -f '{{range.NetworkSettings.Networks}}{{.IPAddress}}{{end}}' mysql-master
+\end{lstlisting}
+
+\subsubsection{Crear el usuario de clonación en el Maestro}
+Entra a la terminal del Maestro:
+
+\begin{lstlisting}
+   docker exec -it mysql-master mysql -uroot -p_XXX
+\end{lstlisting}
+MySQL.
+\begin{lstlisting}
+    CREATE USER 'replica_user'@'%' IDENTIFIED WITH mysql_native_password BY 'xxx';
+    GRANT REPLICATION SLAVE ON *.* TO 'replica_user'@'%';
+    FLUSH PRIVILEGES;
+    EXIT;
+\end{lstlisting}
+
+
+Conectar la Réplica al Maestro:
+
+\begin{lstlisting}
+   docker exec -it mysql-slave mysql -uroot -p_xxxx
+\end{lstlisting}
+MySQL.
+\begin{lstlisting}
+    STOP SLAVE;
+
+    CHANGE MASTER TO
+    MASTER_HOST='mysql-master',
+    MASTER_USER='replica_user',
+    MASTER_PASSWORD='xxxx',
+    MASTER_AUTO_POSITION=1;
+
+    START SLAVE;
+
+    SHOW SLAVE STATUS\G
+\end{lstlisting}
+
+\subsubsection{Comprobar la conexión}
+
+\begin{lstlisting}
+   SHOW SLAVE STATUS\G
+\end{lstlisting}
+
+La replicación asíncrona por GTID está conectada y funcionando de 
+forma estable. 
+
+Se contruyo, desplego y estabilizo una arquitectura de Alta Disponibilidad
+Master - Slave con balanceador de carga en HAProxy en GCP.
+
+\newpage
+
+\section{Poblar la Base de Datos}
+Necesitas enviar el respaldo de tu esquema relacional local a la nube.
+abriendo MySQL Workbench, localhost y creando una nueva conexión hacia tu instancia en GCP.
+
+\begin{itemize}
+    \item Host: 34.122.XXXX
+    \item Puerto: XXXX.
+    \item Contraseña: XXXX.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Conexion_workb.png}
+    \caption{HAProxy}
+\end{figure}
+
+\newpage
+
+\subsection{Cargar Data en la Maquina Virtual GCP}
+Cargar la Data de Ecobici suben 12 archivos CSV a la nube.
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/DATA_ecobici.png}
+    \caption{Data}
+\end{figure}
+
+\subsubsection{Copiar dentro del contenedor Maestro}
+
+Sedeben copiar dentro del contenedor Maestro usando el 
+comando en tu terminal SSH:
+
+\begin{lstlisting}
+    docker cp *.csv mysql-master:/var/lib/mysql-files/
+\end{lstlisting}
+
+Finalmente, en MySQL Workbench, modifica todas las rutas de los archivos en tu script.
+\begin{lstlisting}
+     Cambia 
+     C:/ProgramData/MySQL/
+     por 
+     /var/lib/mysql-files/nombre_del_archivo.csv.
+\end{lstlisting}
+
+Los 12 Archios CSV ya están alojados dentro del nodo Maestro en la ruta
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Inf_VM.png}
+    \caption{VM}
+\end{figure}
+
+\newpage
+
+\subsubsection{Ejecución del Script en MySQL Workbench}
+
+\begin{itemize}
+    \item Script QueryTS Ecobici CDMX en MySQL Workbench.
+    \item Herramienta de Buscar y Reemplazar.
+    \item Escribe la ruta exacta de Windows que tiene tu script actualmente.
+    \begin{lstlisting}
+        C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/
+    \end{lstlisting}
+    \item Replace, escribe la nueva ruta de Linux.
+    \begin{lstlisting}
+        /var/lib/mysql-files/
+    \end{lstlisting}
+    \item Ejecutar todo el script
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Ejecucion_script.png}
+    \caption{VM}
+\end{figure}
+
+\subsubsection{PRIMARY KEY}
+
+Se agregan las llaves primarias.
+
+\begin{lstlisting}
+    ALTER TABLE cat_generos ADD PRIMARY KEY (codigo_genero);
+    ALTER TABLE estaciones ADD PRIMARY KEY (id_estacion);
+    ALTER TABLE bicicletas ADD PRIMARY KEY (bici);
+    ALTER TABLE dim_usuarios ADD PRIMARY KEY (id_perfil);
+    ALTER TABLE dim_fechas ADD PRIMARY KEY (fecha);
+    ALTER TABLE dim_tiempos ADD PRIMARY KEY (hora);
+\end{lstlisting}
+
+\subsubsection{FOREIGN KEY}
+\begin{lstlisting}
+    ALTER TABLE viajes
+        ADD CONSTRAINT fk_viajes_genero FOREIGN KEY (genero_usuario) REFERENCES cat_generos(codigo_genero),
+        ADD CONSTRAINT fk_viajes_bici FOREIGN KEY (bici) REFERENCES bicicletas(bici),
+        ADD CONSTRAINT fk_viajes_estacion_retiro FOREIGN KEY (ciclo_estacion_retiro) REFERENCES estaciones(id_estacion),
+        ADD CONSTRAINT fk_viajes_estacion_arribo FOREIGN KEY (ciclo_estacion_arribo) REFERENCES estaciones(id_estacion),
+        ADD CONSTRAINT fk_viajes_fecha_retiro FOREIGN KEY (fecha_retiro) REFERENCES dim_fechas(fecha),
+        ADD CONSTRAINT fk_viajes_hora_retiro FOREIGN KEY (hora_retiro) REFERENCES dim_tiempos(hora);
+\end{lstlisting}
+
+
+
+\end{document}

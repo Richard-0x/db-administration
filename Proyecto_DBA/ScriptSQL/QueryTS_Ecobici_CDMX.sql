@@ -105,7 +105,7 @@ TRUNCATE TABLE viajes;
 -- 2024
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Enero 2024
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2024-01.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/2024-01.csv'
 INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
@@ -131,7 +131,7 @@ SET
 
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Febreo 2024
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2024-02.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/2024-02.csv'
 INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
@@ -159,7 +159,7 @@ SET
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Marzo 2024
 
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2024-03.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/2024-03.csv'
 INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
@@ -186,7 +186,7 @@ SET
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Abril 2024
 
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2024-04.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/2024-04.csv'
 INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
@@ -215,7 +215,7 @@ SET
 -- 2025
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Enero 2025
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-01.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/2025-01.csv'
 INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
@@ -241,7 +241,7 @@ SET
 
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Febreo 2025
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-02.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/2025-02.csv'
 INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
@@ -269,7 +269,7 @@ SET
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Marzo 2025
 
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-03.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/2025-03.csv'
 INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
@@ -297,7 +297,7 @@ SET
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Abril 2025
 
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2025-04.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/2025-04.csv'
 INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
@@ -327,7 +327,7 @@ SET
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 
 -- Carga Mayo2026
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-05.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/2026-05.csv'
 INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
@@ -354,7 +354,7 @@ SET
 
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Junio 2026
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-06.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/2026-06.csv'
 INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
@@ -381,7 +381,7 @@ SET
 
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Julio 2026
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-07.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/2026-07.csv'
 INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
@@ -408,7 +408,7 @@ SET
 
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 -- Carga Agosto 2026
-LOAD DATA INFILE 'C:/ProgramData/MySQL/MySQL Server 8.0/Uploads/2026-08.csv'
+LOAD DATA INFILE '/var/lib/mysql-files/2026-08.csv'
 INTO TABLE historico_viajes
 CHARACTER SET utf8mb4
 FIELDS TERMINATED BY ','
@@ -468,6 +468,7 @@ SELECT DISTINCT
     END
 FROM viajes
 WHERE TRIM(genero_usuario) IS NOT NULL AND TRIM(genero_usuario) != ''; 
+
 
 -- Poblar Catalogo de Bicicletas
 INSERT INTO bicicletas (bici, tipo_bicicleta, estatus)
@@ -593,8 +594,9 @@ ALTER TABLE viajes
     ADD CONSTRAINT fk_viajes_fecha_retiro FOREIGN KEY (fecha_retiro) REFERENCES dim_fechas(fecha),
     ADD CONSTRAINT fk_viajes_hora_retiro FOREIGN KEY (hora_retiro) REFERENCES dim_tiempos(hora);
     
+
 */
-    
+
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
 --  SENTENCIAS DML: INSERT, UPDATE, DELETE, SELECT
 -- ------------------------------------------------------------------------------------------------------------------------------------------------
@@ -642,8 +644,11 @@ SET FOREIGN_KEY_CHECKS = 0;
 INSERT INTO viajes (genero_usuario, edad_usuario, bici, ciclo_estacion_retiro, fecha_retiro, hora_retiro) 
 VALUES ('F', 30, '54321', '2', '2025-12-31', '08:00:00');
 DELETE FROM viajes WHERE bici = '54321' AND fecha_retiro = '2025-12-31';
+
+SET FOREIGN_KEY_CHECKS = 1;
+SET SQL_SAFE_UPDATES = 1;
+
 SELECT 
-    e.nombre_estacion AS Estacion_Origen,
     g.descripcion AS Genero,
     t.franja_horaria AS Horario,
     COUNT(v.bici) AS Total_Viajes
@@ -654,7 +659,18 @@ JOIN dim_tiempos t ON v.hora_retiro = t.hora
 WHERE g.descripcion = 'Femenino' AND t.franja_horaria = 'Mañana'
 GROUP BY e.nombre_estacion, g.descripcion, t.franja_horaria
 ORDER BY Total_Viajes DESC
+LIMIT 50;
+
+SELECT *
+FROM historico_viajes
+LIMIT 300;
+
+SELECT 
+    db, 
+    query, 
+    exec_count, 
+    total_latency 
+FROM sys.statements_with_full_table_scans 
 LIMIT 5;
 
-SET FOREIGN_KEY_CHECKS = 1;
-SET SQL_SAFE_UPDATES = 1;
+SHOW CREATE TABLE viajes;
