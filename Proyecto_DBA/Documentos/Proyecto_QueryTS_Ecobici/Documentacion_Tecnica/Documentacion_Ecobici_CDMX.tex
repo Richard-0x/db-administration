@@ -340,9 +340,9 @@ los patrones de ruta más frecuentes según el género del usuario.
 \end{center}
 
 
-%%---------------------JOSE----------------------------------------
+
 \newpage 
-\section{Estimación Teórica y Proyección de Espacio en Disco.}
+\section{Estimación Teórica y Proyección de Espacio en Disco LocalHost.}
 \subsection{1. Tamaño por tipo de dato y fila (Row Size)}
 Para realizar la estimación de espacio, se sumaron los bytes requeridos por cada columna de las tablas principales (\texttt{viajes}, \texttt{historico\_viajes}, \texttt{dim\_usuarios}, \texttt{estaciones}, etc.), utilizando los pesos estándar de MySQL: \texttt{INT} = 4 bytes, \texttt{DATETIME} = 5 bytes, \texttt{SMALLINT} = 2 bytes y \texttt{TINYINT} = 1 byte.
 
@@ -374,13 +374,8 @@ Año 5 (+40\% uso) & $\sim$8.95 GB \\ \hline
 \end{table}
 
 
-
-%%---------------------JOSE----------------------------------------
-
-%%-------------------EMILIANO----------------------------------
-
 \newpage 
-\section{Consulta al Diccionario de Datos y Comparación de Almacenamiento.}
+\section{Consulta Diccionario de Datos y Comparación de Almacenamiento LocalHost.}
 \subsection{Justificación Teórica}
 En MySQL 8.0, los metadatos se almacenan de forma centralizada y transaccional en el Diccionario de Datos. Medir los archivos físicos (como \texttt{.ibd}) directamente desde el sistema operativo resulta impreciso debido a dos factores:
 \begin{itemize}
@@ -459,11 +454,411 @@ Catálogos (Suma) & 82,683 & 15.00 & 4.10 & -10.90 \\ \hline
 \end{table}
 
 \textbf{Análisis:} El tamaño real resultó menor a la estimación teórica principalmente porque el modelo matemático calculó la tabla histórica sobre 30 millones de registros, mientras que la carga física procesó aproximadamente 20 millones.
-%%-------------------EMILIANO----------------------------------
+
 
 \newpage
 
-\section{Alta Disponibilidad, Replicación y Casos de Failover.}
+
+
+\section{Aseguramiento de la Disponibilidad y Automatización LocalHost}
+
+La replicación configurada en la Sección 1.3 protege al sistema contra la caída de un servidor, pero no contra errores lógicos. Por ejemplo, si un usuario ejecuta por error un \texttt{DELETE} sobre la tabla de viajes, la réplica aplica ese mismo borrado en cuestión de segundos. Por esta razón, la replicación no sustituye a los respaldos.
+
+Para garantizar la continuidad y el mantenimiento del motor, se diseñó una estrategia operativa automatizada con cuatro ejes: respaldos programados, mantenimiento preventivo, purga y rotación de datos, y monitoreo. Las tareas se programan durante la madrugada, cuando la operación de Ecobici es mínima, y se ordenan para evitar que varios procesos pesados coincidan.
+
+\subsection{Calendario operativo}
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \begin{tabular}{|p{4.2cm}|p{3.2cm}|p{3.6cm}|p{2cm}|}
+        \hline
+        \textbf{Tarea} & \textbf{Herramienta} & \textbf{Frecuencia} & \textbf{Hora (CDMX)} \\ \hline
+        Respaldo incremental (binlogs) & \texttt{cron} + \texttt{docker cp} & Diario & 00:50 \\ \hline
+        Respaldo completo & \texttt{cron} + \texttt{mysqldump} & Semanal (domingo) & 03:00 \\ \hline
+        Rotación de particiones & \texttt{cron} & Mensual (primer sábado) & 01:00 \\ \hline
+        \texttt{ANALYZE TABLE} & Event Scheduler & Semanal (sábado) & 03:00 \\ \hline
+        \texttt{OPTIMIZE TABLE viajes} & Event Scheduler & Mensual (primer sábado) & 03:00 \\ \hline
+        Purga de binlogs & MySQL (automática) & Continua, 14 días & --- \\ \hline
+        Reporte de monitoreo & \texttt{cron} & Diario & 07:00 \\ \hline
+    \end{tabular}
+    \caption{Calendario de tareas automatizadas.}
+    \label{tab:calendario-operativo}
+\end{table}
+
+El primer sábado de cada mes, la rotación de particiones se ejecuta a la 01:00 y el mantenimiento a las 03:00. Este orden permite que el mantenimiento se ejecute después de la rotación. El respaldo completo del domingo se programa en un día distinto al mantenimiento del sábado.
+
+\newpage
+
+\subsection{Estrategia de respaldos}
+
+La estrategia combina dos tipos de respaldo: un respaldo lógico \textbf{completo} cada semana y una copia diaria de los registros binarios (\textit{binary logs} o \textit{binlogs}). El respaldo completo representa una fotografía de la base de datos; los binlogs registran los cambios posteriores. En conjunto, y siempre que la cadena de archivos esté completa y sea consistente, permiten recuperar la información hasta un punto determinado en el tiempo (\textit{Point-in-Time Recovery}, PITR).
+
+\paragraph{Respaldo completo semanal.}
+El respaldo se ejecuta con \texttt{mysqldump} desde la réplica para reducir la carga de lectura sobre el servidor principal. Las opciones exactas deben validarse con la versión de MySQL utilizada y con la configuración GTID del entorno. El ejemplo siguiente presupone que las credenciales se gestionan de forma segura y que los directorios de destino ya existen.
+
+\begin{lstlisting}
+#!/bin/bash
+# Respaldo logico completo semanal (domingo 03:00)
+set -o pipefail
+
+FECHA=$(date +%Y-%m-%d)
+DIR="$HOME/proyecto_ecobici"
+ARCHIVO="$DIR/backups/completos/ecobici_completo_${FECHA}.sql.gz"
+
+if docker exec mysql-slave mysqldump \
+    --defaults-extra-file=/run/secrets/mysql-client.cnf \
+    --single-transaction --source-data=2 --set-gtid-purged=ON \
+    --routines --triggers --events \
+    --databases DB_Ecobici_CDMX | gzip > "$ARCHIVO"; then
+    echo "$(date) OK respaldo completo: $ARCHIVO" >> "$DIR/logs/respaldos.log"
+else
+    echo "$(date) ERROR en respaldo completo" >> "$DIR/logs/respaldos.log"
+    rm -f "$ARCHIVO"
+    exit 1
+fi
+
+# Conservar aproximadamente las ultimas cuatro semanas
+find "$DIR/backups/completos" \
+    -name "ecobici_completo_*.sql.gz" -mtime +28 -delete
+\end{lstlisting}
+
+\textbf{Nota de seguridad:} el archivo de credenciales del ejemplo es ilustrativo. Debe existir dentro del contenedor, tener permisos restrictivos y configurarse según la imagen utilizada. No se recomienda guardar contraseñas directamente en el código ni publicarlas en el repositorio.
+
+\newpage
+
+\paragraph{Respaldo diario de binlogs.}
+Cada noche se puede ejecutar \texttt{FLUSH BINARY LOGS} para cerrar el binlog actual y comenzar uno nuevo. Los archivos cerrados se copian fuera del contenedor; el archivo activo no debe copiarse mientras MySQL siga escribiéndolo. El ejemplo requiere que el usuario de MySQL tenga los permisos necesarios y que el directorio de destino exista.
+
+\begin{lstlisting}
+#!/bin/bash
+# Copia diaria de binlogs (00:50)
+set -euo pipefail
+
+DIR="$HOME/proyecto_ecobici"
+DESTINO="$DIR/backups/binlogs"
+mkdir -p "$DESTINO"
+
+# Se recomienda usar un archivo de opciones protegido.
+MYSQL=(docker exec mysql-master mysql
+       --defaults-extra-file=/run/secrets/mysql-client.cnf
+       -N -e)
+
+# 1. Rotar el binlog activo
+"${MYSQL[@]}" "FLUSH BINARY LOGS;"
+
+# 2. Identificar el archivo binlog activo
+ACTIVO=$("${MYSQL[@]}" "SHOW BINARY LOG STATUS;" | awk 'NR==1 {print $1}')
+
+# 3. Copiar binlogs cerrados que aun no existan en el destino
+for f in $(docker exec mysql-master \
+    sh -c "ls /var/lib/mysql | grep -E '^mysql-bin\\.[0-9]+$'"); do
+    if [ "$f" != "$ACTIVO" ] && [ ! -f "$DESTINO/$f" ]; then
+        docker cp "mysql-master:/var/lib/mysql/$f" "$DESTINO/"
+        echo "$(date) Binlog copiado: $f" >> "$DIR/logs/respaldos.log"
+    fi
+done
+
+# 4. Aplicar la retencion definida para las copias locales
+find "$DESTINO" -type f -name "mysql-bin.*" -mtime +14 -delete
+\end{lstlisting}
+
+\textbf{Importante:} el nombre de la consulta de estado depende de la versión de MySQL. En versiones que no admitan \texttt{SHOW BINARY LOG STATUS}, debe utilizarse la sentencia equivalente disponible en esa versión. Además, la rotación y copia de binlogs debe coordinarse con la política de purga del servidor y con el estado de la réplica.
+
+\newpage
+
+\paragraph{Procedimiento de recuperación a un punto en el tiempo (PITR).}
+Supóngase que el miércoles 21 de octubre de 2026 a las 15:00, hora de Ciudad de México, se ejecuta por error un \texttt{DELETE} que elimina los viajes de octubre. La recuperación debe realizarse en una instancia aislada, sin modificar directamente el servidor principal.
+
+\begin{lstlisting}[language=bash, caption={Esquema de recuperación a un punto en el tiempo}]
+# 1. Preparar una instancia aislada con la misma version compatible
+# de MySQL y una configuracion de recuperacion validada.
+docker run -d --name mysql-recuperacion \
+    -e MYSQL_ROOT_PASSWORD='CAMBIAR_POR_UN_SECRETO_SEGURO' \
+    mysql:8.0
+
+# 2. Restaurar el respaldo completo correspondiente.
+# El procedimiento exacto depende de las opciones GTID incluidas
+# en el dump y del estado inicial de la instancia de recuperacion.
+gunzip -c backups/completos/ecobici_completo_2026-10-18.sql.gz \
+    | docker exec -i mysql-recuperacion \
+      mysql -uroot -p
+
+# 3. Copiar los binlogs disponibles al contenedor de recuperacion.
+docker cp backups/binlogs/. mysql-recuperacion:/tmp/binlogs/
+
+# 4. Inspeccionar y reproducir los binlogs en orden cronologico,
+# deteniendose justo antes del momento del error.
+# Verificar primero la zona horaria y el formato temporal de los logs.
+# Ejemplo ilustrativo: ajustar los nombres de archivo y la hora real.
+docker exec mysql-recuperacion sh -c \
+  "mysqlbinlog --stop-datetime='2026-10-21 20:59:59' \
+  /tmp/binlogs/mysql-bin.000001 /tmp/binlogs/mysql-bin.000002 \
+  | mysql -uroot -p"
+\end{lstlisting}
+
+El comando anterior es un esquema de procedimiento, no una receta universal que deba ejecutarse sin validación. Antes de reproducir los binlogs, se debe confirmar su orden, la continuidad de la secuencia, la zona horaria y la compatibilidad de los GTID incluidos en el respaldo. La restauración de un dump que contiene \texttt{SET @@GLOBAL.GTID\_PURGED} puede requerir una instancia preparada con el historial GTID apropiado; no se debe ejecutar \texttt{RESET MASTER} de forma automática sin revisar las consecuencias para la recuperación.
+
+Una vez validada la información restaurada, los registros recuperados se exportan de la instancia aislada y se reintegran al servidor principal mediante un procedimiento controlado, con respaldo previo y validación de claves e integridad.
+
+\paragraph{Retención de respaldos.}
+La política propuesta conserva cuatro semanas de respaldos completos y 14 días de copias de binlogs. Esta retención solo es suficiente si los respaldos completos y los binlogs necesarios para llegar al punto de recuperación deseado están disponibles y verificados. Los archivos de respaldo deben almacenarse, preferentemente, en un destino independiente del servidor que se protege. La duración de retención configurada en MySQL debe coordinarse con las copias externas; la purga del servidor no debe eliminar archivos que aún sean necesarios para la réplica o para la recuperación.
+
+\newpage
+
+\subsubsection{Mantenimiento preventivo automatizado}
+
+Las operaciones de inserción, actualización y borrado pueden provocar cambios en la distribución de las páginas y en el uso del espacio de almacenamiento. Por ello, el mantenimiento debe basarse en métricas y en las características de la tabla, no únicamente en la suposición de que toda tabla necesita reconstruirse periódicamente.
+
+\begin{itemize}
+    \item \texttt{ANALYZE TABLE} actualiza estadísticas que el optimizador utiliza para seleccionar planes de ejecución. Puede programarse periódicamente y comprobarse su impacto en la carga.
+    \item \texttt{OPTIMIZE TABLE} puede reconstruir una tabla InnoDB y compactar su almacenamiento; su duración, espacio temporal y bloqueo dependen de la versión, el tamaño de la tabla y la operación concreta. Por ello, debe ejecutarse en una ventana de mantenimiento y después de evaluar su necesidad.
+\end{itemize}
+
+La tabla \texttt{viajes} recibe operaciones transaccionales y puede experimentar cambios frecuentes. Si no tiene una llave primaria explícita, InnoDB crea un índice agrupado interno, pero se recomienda definir una llave primaria adecuada para facilitar la identificación de filas, mejorar el diseño y reducir problemas de mantenimiento y replicación. En cambio, si \texttt{historico\_viajes} recibe datos por lotes y se mantiene principalmente como histórico, el particionamiento puede facilitar la eliminación de periodos completos. La eliminación de una partición debe realizarse únicamente después de resumir, exportar y verificar los datos que contiene.
+
+En MySQL 8.0, el Event Scheduler puede estar habilitado o deshabilitado según la configuración del servidor. Su estado se verifica con:
+
+\begin{lstlisting}[language=SQL, caption={Verificación del Event Scheduler}]
+SHOW VARIABLES LIKE 'event_scheduler';
+\end{lstlisting}
+
+El siguiente ejemplo ilustra un evento semanal. La fecha de inicio debe ajustarse al calendario real y a la zona horaria configurada en el servidor. Para que el mantenimiento mensual ocurra el primer sábado, es preferible programar un evento mensual separado, en lugar de depender de una condición dentro de un evento semanal.
+
+\begin{lstlisting}[language=SQL, caption={Evento de mantenimiento semanal}]
+USE DB_Ecobici_CDMX;
+
+CREATE EVENT IF NOT EXISTS ev_analisis_semanal
+ON SCHEDULE EVERY 1 WEEK
+STARTS '2026-10-31 09:00:00'
+COMMENT 'Actualizacion semanal de estadisticas'
+DO
+    ANALYZE TABLE viajes, historico_viajes;
+\end{lstlisting}
+
+\begin{lstlisting}[language=SQL, caption={Evento mensual de optimización}]
+USE DB_Ecobici_CDMX;
+
+CREATE EVENT IF NOT EXISTS ev_optimizacion_mensual
+ON SCHEDULE EVERY 1 MONTH
+STARTS '2026-11-07 09:00:00'
+COMMENT 'Evaluar y optimizar la tabla viajes mensualmente'
+DO
+    OPTIMIZE TABLE viajes;
+\end{lstlisting}
+
+Los horarios anteriores son ejemplos y deben verificarse con la zona horaria efectiva de MySQL. Además, se debe confirmar que \texttt{event\_scheduler} esté en \texttt{ON} y que el usuario que crea los eventos tenga el privilegio \texttt{EVENT}. Los eventos creados en el servidor principal se replican en la réplica con estado deshabilitado para evitar su ejecución duplicada; por ello, no debe asumirse que las sentencias de mantenimiento se ejecutarán automáticamente en ambos nodos.
+
+Para verificar el estado de los eventos y revisar el espacio libre reportado por el diccionario de datos, se pueden ejecutar las siguientes consultas:
+
+\begin{lstlisting}[language=SQL, caption={Verificación de eventos y espacio libre}]
+SELECT EVENT_NAME, STATUS, LAST_EXECUTED
+FROM information_schema.EVENTS
+WHERE EVENT_SCHEMA = 'DB_Ecobici_CDMX';
+
+SELECT TABLE_NAME AS Tabla,
+       ROUND(DATA_FREE / 1024 / 1024, 2) AS Espacio_Libre_MB
+FROM information_schema.TABLES
+WHERE TABLE_SCHEMA = 'DB_Ecobici_CDMX'
+ORDER BY DATA_FREE DESC;
+\end{lstlisting}
+
+El valor de \texttt{DATA\_FREE} es una estimación del espacio libre asignado o disponible según el motor y el almacenamiento; no constituye por sí solo una medición concluyente de fragmentación. Conviene acompañarlo con métricas de tamaño, rendimiento y duración de consultas antes y después del mantenimiento.
+
+\subsection{Purga y rotación de datos}
+
+\paragraph{Purga de registros binarios.}
+La retención automática de binlogs se configura mediante la variable correspondiente de MySQL. Para un periodo de 14 días, el valor en segundos es:
+
+\[
+14 \times 24 \times 60 \times 60 = 1\,209\,600.
+\]
+
+En las versiones que utilicen esta variable, la configuración puede expresarse como 
+\texttt{binlog\_expire\_logs\_seconds=1209600}. La purga manual equivalente se puede solicitar con:
+
+\begin{lstlisting}[language=SQL]
+PURGE BINARY LOGS BEFORE NOW() - INTERVAL 14 DAY;
+\end{lstlisting}
+
+Antes de una purga manual se debe comprobar que la réplica ya no necesite los archivos que se eliminarán. Si una réplica permanece desconectada y se purgan los binlogs que aún necesita, puede perder la capacidad de continuar la replicación y requerir una resincronización.
+
+\paragraph{Política de retención de viajes.}
+Los viajes detallados pueden ser relevantes durante los primeros meses; después, suelen consultarse principalmente totales y tendencias, como la demanda por estación, la estacionalidad y el perfil general de los usuarios. Para conciliar ambas necesidades, se proponen dos técnicas: \textbf{resumir} la información esencial dentro de la base de datos y \textbf{archivar} el detalle completo fuera de ella.
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \begin{tabular}{|p{4.3cm}|p{5.3cm}|p{3.6cm}|}
+        \hline
+        \textbf{Información} & \textbf{Ubicación} & \textbf{Retención} \\ \hline
+        Viajes detallados & \texttt{historico\_viajes} (base activa) & 3 meses \\ \hline
+        Resumen mensual por estación y perfil & \texttt{resumen\_viajes\_mes} & Permanente, sujeto a política de conservación \\ \hline
+        Detalle histórico & Google Cloud Archive Storage & Archivo de largo plazo \\ \hline
+        Respaldos completos & Servidor (\texttt{backups/completos}) & 4 semanas \\ \hline
+        Binlogs & Servidor y \texttt{backups/binlogs} & 14 días \\ \hline
+    \end{tabular}
+    \caption{Política propuesta de retención de datos.}
+    \label{tab:retencion-datos}
+\end{table}
+
+El resumen permanece en MySQL porque Archive Storage es almacenamiento de objetos, no una base de datos relacional: los objetos no se consultan directamente mediante SQL y las recuperaciones pueden tener costes y latencia adicionales. Además, una tabla agregada puede ocupar mucho menos espacio que el detalle de todos los viajes.
+
+\textbf{Alcance del resumen.} Si los datos abiertos de Ecobici no contienen un identificador individual de usuario ni la distancia recorrida, y la tabla \texttt{estaciones} no contiene coordenadas, el resumen debe limitarse a las variables realmente disponibles. En este diseño se propone agrupar por estación de retiro, género y mes, e incluir la edad promedio y la duración promedio de los viajes. Un resumen anual personalizado para cada usuario requeriría un identificador de usuario consistente y autorizado.
+
+\begin{lstlisting}[language=SQL, caption={Tabla de resumen mensual}]
+CREATE TABLE resumen_viajes_mes (
+    anio                  SMALLINT NOT NULL,
+    mes                   TINYINT NOT NULL,
+    ciclo_estacion_retiro VARCHAR(100) NOT NULL,
+    genero_usuario        CHAR(1) NOT NULL,
+    total_viajes          INT NOT NULL,
+    edad_promedio         DECIMAL(4,1),
+    duracion_promedio_min DECIMAL(6,1),
+    PRIMARY KEY (anio, mes, ciclo_estacion_retiro, genero_usuario)
+);
+\end{lstlisting}
+
+En el código de producción, el valor que represente datos nulos de género debe documentarse y normalizarse en el proceso de carga. También conviene validar que la clave de agrupación represente de forma única a la estación y no dependa únicamente de un nombre que pueda cambiar.
+
+\paragraph{Transición a particiones mensuales.}
+Si \texttt{historico\_viajes} está particionada por año mediante \texttt{RANGE COLUMNS(fecha\_retiro)}, una partición anual no permite aplicar directamente una retención de tres meses: \texttt{DROP PARTITION} eliminaría el año completo. Por ello, se propone reorganizar la partición del año en curso en particiones mensuales y crear anticipadamente las particiones futuras. Antes de aplicar el cambio, se debe verificar la definición real de la tabla, el tipo de la columna de fecha y las restricciones de particionamiento de la versión instalada.
+
+\begin{lstlisting}[language=SQL, caption={División de la partición de 2026 en meses}]
+ALTER TABLE historico_viajes
+REORGANIZE PARTITION p_2026 INTO (
+    PARTITION p_202601 VALUES LESS THAN ('2026-02-01'),
+    PARTITION p_202602 VALUES LESS THAN ('2026-03-01'),
+    PARTITION p_202603 VALUES LESS THAN ('2026-04-01'),
+    PARTITION p_202604 VALUES LESS THAN ('2026-05-01'),
+    PARTITION p_202605 VALUES LESS THAN ('2026-06-01'),
+    PARTITION p_202606 VALUES LESS THAN ('2026-07-01'),
+    PARTITION p_202607 VALUES LESS THAN ('2026-08-01'),
+    PARTITION p_202608 VALUES LESS THAN ('2026-09-01'),
+    PARTITION p_202609 VALUES LESS THAN ('2026-10-01'),
+    PARTITION p_202610 VALUES LESS THAN ('2026-11-01'),
+    PARTITION p_202611 VALUES LESS THAN ('2026-12-01'),
+    PARTITION p_202612 VALUES LESS THAN ('2027-01-01')
+);
+\end{lstlisting}
+
+El resultado se comprueba mediante el diccionario de datos:
+
+\begin{lstlisting}[language=SQL, caption={Verificación de particiones}]
+SELECT PARTITION_NAME, PARTITION_DESCRIPTION, TABLE_ROWS
+FROM information_schema.PARTITIONS
+WHERE TABLE_SCHEMA = 'DB_Ecobici_CDMX'
+  AND TABLE_NAME = 'historico_viajes'
+ORDER BY PARTITION_ORDINAL_POSITION;
+\end{lstlisting}
+
+Las particiones anuales \texttt{p\_2024} y \texttt{p\_2025} estarían fuera del periodo activo si la política de retención comienza en 2026. Su archivo y eliminación deben ejecutarse únicamente después de exportar, verificar y respaldar sus datos. Si existe un script de rotación, se debe comprobar que sus parámetros, consultas y operaciones correspondan a la definición real de las particiones.
+
+\begin{lstlisting}[language=bash, caption={Ejemplo de ejecución manual de rotación}]
+./rotacion_particiones.sh p_2024
+./rotacion_particiones.sh p_2025
+\end{lstlisting}
+
+\paragraph{Proceso mensual de rotación.}
+La regla central del proceso es que \textbf{la operación irreversible va al final}. \texttt{DROP PARTITION} elimina los datos de la partición; por ello, solo debe ejecutarse después de resumir, exportar y verificar la información. Si cualquier paso falla, el proceso debe detenerse sin borrar datos y registrar el error en la bitácora.
+
+\begin{enumerate}
+    \item Calcular el resumen mensual e insertarlo en \texttt{resumen\_viajes\_mes}.
+    \item Exportar el detalle de la partición a un archivo CSV.
+    \item Verificar que el archivo contenga el mismo número de registros que la partición.
+    \item Comprimir el archivo, subirlo a Archive Storage y comprobar que la carga terminó correctamente.
+    \item Eliminar la partición con \texttt{DROP PARTITION}, después de validar el archivo y el resumen.
+    \item Crear la partición del mes siguiente si aún no existe.
+\end{enumerate}
+
+Si la partición está vacía, los pasos de exportación pueden omitirse después de comprobar explícitamente que no contiene registros. El bucket de Archive Storage debe crearse una sola vez, en la región elegida para el proyecto, y debe configurarse con permisos y controles de acceso apropiados.
+
+\subsection{Gestión reactiva y monitoreo}
+
+\paragraph{Error Log.}
+En los contenedores, los mensajes de MySQL pueden consultarse mediante \texttt{docker logs}. La disponibilidad de la tabla \texttt{performance\_schema.error\_log} depende de la versión y la configuración de MySQL. Si está disponible, puede utilizarse una consulta como la siguiente:
+
+\begin{lstlisting}[language=SQL, caption={Consulta ilustrativa de errores y advertencias}]
+SELECT LOGGED, PRIO, ERROR_CODE, LEFT(DATA, 120) AS mensaje
+FROM performance_schema.error_log
+WHERE PRIO IN ('Error', 'Warning')
+  AND LOGGED > NOW() - INTERVAL 1 DAY
+ORDER BY LOGGED DESC;
+\end{lstlisting}
+
+\paragraph{Slow Query Log.}
+Si el registro de consultas lentas está habilitado y configurado para almacenar sus resultados en tablas, se pueden revisar las consultas que tardan más. El umbral de dos segundos debe establecerse en la configuración del servidor; no se activa solo por consultar la tabla de registro.
+
+\begin{lstlisting}[language=SQL, caption={Consulta ilustrativa de las consultas lentas}]
+SELECT start_time, query_time, rows_examined,
+       LEFT(sql_text, 100) AS consulta
+FROM mysql.slow_log
+ORDER BY query_time DESC
+LIMIT 10;
+\end{lstlisting}
+
+\paragraph{Memoria del Buffer Pool.}
+El parámetro \texttt{innodb\_buffer\_pool\_size} define la memoria que InnoDB utiliza para almacenar en caché páginas de datos e índices. Su valor adecuado depende de la RAM disponible, la carga de trabajo y los límites de memoria de los contenedores. En este entorno se propone asignar 1 GiB por nodo, siempre que la suma de límites y el consumo real de los procesos que comparten la máquina lo permitan.
+
+\begin{lstlisting}[language=SQL, caption={Tamaño y métricas del Buffer Pool}]
+SELECT @@innodb_buffer_pool_size / 1024 / 1024 AS Buffer_Pool_MB;
+
+SELECT ROUND(
+    100 * (1 - r.VARIABLE_VALUE / q.VARIABLE_VALUE), 2
+) AS Hit_Ratio_Pct
+FROM performance_schema.global_status AS r
+JOIN performance_schema.global_status AS q
+  ON q.VARIABLE_NAME = 'Innodb_buffer_pool_read_requests'
+WHERE r.VARIABLE_NAME = 'Innodb_buffer_pool_reads';
+
+SELECT VARIABLE_NAME, VARIABLE_VALUE
+FROM performance_schema.global_status
+WHERE VARIABLE_NAME IN (
+    'Innodb_buffer_pool_pages_free',
+    'Innodb_buffer_pool_pages_total',
+    'Created_tmp_disk_tables',
+    'Sort_merge_passes',
+    'Select_full_join'
+);
+\end{lstlisting}
+
+El cociente de aciertos del Buffer Pool debe interpretarse como una señal orientativa y evaluarse junto con la carga de trabajo; no existe un umbral universal que, por sí solo, demuestre un problema.
+
+\begin{table}[htbp]
+    \centering
+    \small
+    \begin{tabular}{|p{4.6cm}|p{9.2cm}|}
+        \hline
+        \textbf{Indicador} & \textbf{Señal que conviene investigar} \\ \hline
+        Hit Ratio & Una tasa persistentemente baja puede indicar lecturas frecuentes desde disco o un conjunto de trabajo mayor que la caché. \\ \hline
+        \texttt{Innodb\_buffer\_pool\_pages\_free} & Un valor cercano a cero durante periodos prolongados requiere revisar la presión de memoria y la actividad de InnoDB. \\ \hline
+        \texttt{Created\_tmp\_disk\_tables} & Un crecimiento elevado puede indicar consultas que generan tablas temporales en disco. \\ \hline
+        \texttt{Sort\_merge\_passes} & Un incremento sostenido puede indicar ordenamientos que requieren varias pasadas. \\ \hline
+        \texttt{Select\_full\_join} & Un valor creciente puede revelar uniones sin índices adecuados. \\ \hline
+    \end{tabular}
+    \caption{Interpretación orientativa de indicadores de memoria y consultas.}
+    \label{tab:indicadores-memoria}
+\end{table}
+
+\textbf{Observación sobre la replicación.}
+Las tablas del proyecto deben contar con claves que 
+permitan identificar las filas de forma eficiente. 
+Cuando se usa replicación basada en filas (\texttt{ROW}), 
+la ausencia de una llave primaria o de un índice adecuado 
+puede incrementar el coste de localizar las filas afectadas
+por ciertas operaciones. 
+Esto puede contribuir al retraso de la réplica, 
+que debe vigilarse junto con el estado de los hilos de 
+replicación, los errores y el volumen de transacciones 
+pendientes. Se recomienda revisar las claves primarias 
+propuestas en el script del proyecto y validar su impacto 
+antes de incorporarlas al entorno activo.
+
+\newpage
+
+
+
+\section{Alta Disponibilidad, Replicación y Casos de Failover LocalHost}
 \subsection{Servidores Primario, Réplica y Balanceador usando Docker.}
 
 \subsubsection{Creando el entorno}
@@ -738,7 +1133,7 @@ Si quieres ver cómo tu computadora está trabajando, puedes abrir una nueva pes
 \end{figure}
 
 \newpage
-\section{Crear Cuenta Google Cloud}
+\section{Crear Cuenta Google Cloud GCP.}
 
 \begin{figure}[H]
     \centering
@@ -828,7 +1223,7 @@ Pero necesitamos abrir los puertos específicos de la bases de datos
 
 \newpage
 
-\subsubsection{Maquina Virtual}
+\section{Maquina Virtual Cloud GCP.}
 
 Maquina Virtual: Se observa la terminal de Ubuntu 2404 LTS conectada vá
 SSH
@@ -839,7 +1234,7 @@ SSH
     \caption{Firewall}
 \end{figure}
 
-\subsubsection{Instalar Docker y Docker Compose}
+\section{Instalar Docker y Docker Compose Cloud GCP.}
 
 Se instalara Docker en la maquina virtual y se caragra el proyecto
 
@@ -850,7 +1245,7 @@ Primero actualizaremos los paquetes del sistema y luego instalaremos el motor de
     sudo apt install docker.io docker-compose-v2 -y
 \end{lstlisting}
 
-\subsubsection{Dar permisos a tu usuario}
+\subsection{Dar permisos a tu usuario}
 
 Para no tener que escribir sudo antes de cada comando de Docker, 
 añadiremos tu usuario al grupo de Docker:
@@ -889,7 +1284,7 @@ La configuración del balanceador de carga dentro de su respectiva carpeta.
     nano haproxy/haproxy.cfg
 \end{lstlisting}
 
-\subsubsection{Arrancar la infraestructura en la nube}
+\section{Arrancar la infraestructura en la nube Cloud GCP.}
 Con los archivos listos, ejecuta este comando para descargar las imágenes y encender los servidores de base de datos.
 \begin{lstlisting}
     docker compose up -d
@@ -906,7 +1301,7 @@ La arquitectura esta completa.
 Estan levantados los contenedores y de forma estable en la maquina 
 virtual de GCP.
 
-\subsubsection{Configuración de Permisos para HAProxy (Health Checks)}
+\subsection{Configuración de Permisos para HAProxy (Health Checks)}
 
 La infraestructura funciona, los nodos de MySQL rechazan 
 la conexión del balanceador porque todavía no se crea 
@@ -986,7 +1381,7 @@ Master - Slave con balanceador de carga en HAProxy en GCP.
 
 \newpage
 
-\section{Poblar la Base de Datos}
+\section{Poblar la Base de Datos Cloud GCP.}
 Necesitas enviar el respaldo de tu esquema relacional local a la nube.
 abriendo MySQL Workbench, localhost y creando una nueva conexión hacia tu instancia en GCP.
 
@@ -1086,6 +1481,277 @@ Se agregan las llaves primarias.
         ADD CONSTRAINT fk_viajes_hora_retiro FOREIGN KEY (hora_retiro) REFERENCES dim_tiempos(hora);
 \end{lstlisting}
 
+\section{Configuracion de Parametros Cloud GCP.}
+Tu instancia nodo-respaldo-ecobici tiene 1 GB de RAM total. 
+La regla del 60 - 80 asume que hay un único servidor de base de datos instalado en el sistema operativo. 
+Dado que tu entorno de Alta Disponibilidad corre dos contenedores MySQL (Maestro y Esclavo) 
+junto con HAProxy en la misma máquina virtual.
+
+Se asignaran 300MB a cada nodo, lo que en conjunto representara el 60 de la RAM de la maquina virtual.
+
+Se crean las carpetas.
+
+
+\begin{lstlisting}
+    mkdir -p ~/proyecto_ecobici/master/conf/mysql.conf.d/
+    mkdir -p ~/proyecto_ecobici/slave/conf/mysql.conf.d/
+\end{lstlisting}
+
+
+\subsection{Configurar el nodo Maestro}
+
+
+\begin{lstlisting}
+    nano ~/proyecto_ecobici/master/conf/mysql.conf.d/mysqld.cnf
+
+    innodb_buffer_pool_size = 300M
+    innodb_log_buffer_size = 32M
+\end{lstlisting}
+
+\subsection{Configurar el nodo Esclavo}
+
+
+\begin{lstlisting}
+    nano ~/proyecto_ecobici/slave/conf/mysql.conf.d/mysqld.cnf
+
+    innodb_buffer_pool_size = 300M
+    innodb_log_buffer_size = 32M
+    o
+    echo -e "[mysqld]\ninnodb_buffer_pool_size = 300M\ninnodb_log_buffer_size = 32M" > ~/proyecto_ecobici/master/conf/mysql.conf.d/mysqld.cnf
+\end{lstlisting}
+
+\subsection{Aplicar los cambios en el clúster}
+
+\begin{lstlisting}
+    cd ~/proyecto_ecobici
+    docker compose restart mysql-master mysql-slave
+
+    o 
+    echo -e "[mysqld]\ninnodb_buffer_pool_size = 300M\ninnodb_log_buffer_size = 32M" > ~/proyecto_ecobici/slave/conf/mysql.conf.d/mysqld.cnf
+\end{lstlisting}
+
+Verificar.
+
+\begin{lstlisting}
+    SHOW VARIABLES LIKE 'innodb_buffer_pool_size';
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/fuffer_pool.png}
+    \caption{buffer pool}
+\end{figure}
+
+\newpage
+
+\section{Disponibilidad y Automatizacion Cloud GCP.}
+
+\subsection{Instalar la herramienta cron}
+
+\begin{lstlisting}
+sudo apt update && sudo apt install cron -y
+\end{lstlisting}
+
+\begin{lstlisting}
+sudo systemctl enable --now cron
+\end{lstlisting}
+
+Crear un script de Bah en el servidor Ubuntu que ejecute
+\begin{lstlisting}
+    mysqldump 
+con la bandera
+    --single-transaction
+\end{lstlisting}
+Para no bloquear escrituras durante el respaldo y se automatizara con cron
+para que se ejecute solo en la madrugada.
+
+\subsection{Crear la carpeta y el script de respaldo}
+
+\begin{lstlisting}
+    mkdir ~/proyecto_ecobici/backups
+    nano ~/proyecto_ecobici/backup.sh
+\end{lstlisting}
+
+\subsubsection{Script de automatización}
+
+\textbf{--source-data=2}
+\begin{lstlisting}
+    !/bin/bash
+    Script de Respaldo Logico para Ecobici CDMX
+
+    FECHA=$(date +"%Y-%m-%d_%H-%M")
+    DESTINO="/home/richard97lopez/proyecto_ecobici/backups/ecobici_full_$FECHA.sql"
+
+    1. Ejecutar mysqldump a traves del contenedor Maestro
+    docker exec mysql-master mysqldump -uroot -pxxx --single-transaction --source-data=2 --routines --events --triggers DB_Ecobici_CDMX > $DESTINO
+
+    2. Comprimir el respaldo para no saturar el disco de 10 GB de GCP
+    gzip $DESTINO
+\end{lstlisting}
+
+\subsubsection{Dar permisos y programar la tarea automática}
+El script sea ejecutable.
+
+\begin{lstlisting}
+    chmod +x ~/proyecto_ecobici/backup.sh
+\end{lstlisting}
+
+\begin{lstlisting}
+    crontab -e
+\end{lstlisting}
+Si te pregunta qué editor usar, presiona 1 para nano
+
+Al final del archivo y  indica en la línea a 
+Linux que ejecute tu script todos los días a las 2:00 AM hora del servidor.
+\begin{lstlisting}
+   0 2 * * * /home/richard97lopez/proyecto_ecobici/backup.sh
+\end{lstlisting}
+
+\subsubsection{Comprobar el peso del respaldo}
+Para verificar físicamente que el script que acabas de 
+ejecutar funcionó y comprimió tus 6.5 millones de viajes.
+
+\begin{lstlisting}
+    ls -lh ~/proyecto_ecobici/backups/
+\end{lstlisting}
+
+\subsection{Respaldo Incremental Diario (Binlogs)}
+
+El script copiará la bitácora de transacciones (binlogs) todos los días,
+permitiendo recuperar la base de datos hasta un segundo exacto 
+antes de un accidente (Point-In-Time Recovery).
+
+\begin{lstlisting}
+    mkdir -p ~/proyecto_ecobici/backups/binlogs
+    mkdir -p ~/proyecto_ecobici/logs
+\end{lstlisting}
+
+\begin{lstlisting}
+    nano ~/proyecto_ecobici/respaldo_binlogs.sh
+\end{lstlisting}
+
+\begin{lstlisting}
+    !/bin/bash
+Respaldo incremental diario de binlogs
+DIR=$HOME/proyecto_ecobici
+DESTINO=$DIR/backups/binlogs
+MYSQL="docker exec mysql-master mysql -uroot -p_xxx-N -e"
+
+1. Rotacion: cerrar el binlog actual y abrir uno nuevo
+$MYSQL "FLUSH BINARY LOGS;"
+
+2. Identificar el binlog activo (no se copia)
+ACTIVO=$($MYSQL "SHOW MASTER STATUS;" | awk '{print $1}')
+
+3. Copiar los binlogs cerrados que aun no esten respaldados
+for f in $(docker exec mysql-master bash -c "ls /var/lib/mysql | grep -E '^mysql-bin\.[0-9]+$'"); do
+    if [ "$f" != "$ACTIVO" ] && [ ! -f "$DESTINO/$f" ]; then
+        docker cp mysql-master:/var/lib/mysql/$f $DESTINO/
+        echo "$(date) Binlog copiado: $f" >> $DIR/logs/respaldos.log
+    fi
+done
+
+4. Conservar 14 dias de binlogs respaldados
+find $DESTINO -name "mysql-bin.*" -mtime +14 -delete
+\end{lstlisting}
+
+\begin{lstlisting}
+    chmod +x ~/proyecto_ecobici/respaldo_binlogs.sh
+\end{lstlisting}
+
+\newpage
+
+
+\subsection{Mantenimiento Preventivo Automatizado ANALYZE y OPTIMIZE}
+
+Para desfragmentar la base de datos limpiar los huecos que dejan los DELETE o UPDATE, 
+se usara el programador interno de MySQL (Event Scheduler).
+
+\subsubsection{MySQL Workbench}
+
+Abre una nueva pestaña de consultas SQL y ejecuta el 
+código exacto para crear el evento.
+
+\begin{lstlisting}
+    USE DB_Ecobici_CDMX;
+
+    DELIMITER $$
+    CREATE EVENT ev_mantenimiento_semanal
+    ON SCHEDULE EVERY 1 WEEK
+    STARTS CURRENT_TIMESTAMP
+    COMMENT 'ANALYZE semanal y OPTIMIZE mensual (primer sabado)'
+    DO
+    BEGIN
+        ANALYZE TABLE viajes, historico_viajes;
+        IF DAYOFMONTH(CURRENT_DATE) <= 7 THEN
+            OPTIMIZE TABLE viajes;
+        END IF;
+    END$$
+    DELIMITER ;
+
+    SELECT event_name, status, last_executed FROM information_schema.events WHERE event_schema = 'DB_Ecobici_CDMX';
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Event.png}
+    \caption{CREATE EVENT}
+\end{figure}
+
+\newpage
+
+\subsection{Rotación de Particiones y Retención de Datos}
+La tabla histórica archive los datos viejos y que la tabla activa no crezca de forma descontrolada.
+
+Se Crea el script de rotación en tu terminal
+
+\begin{lstlisting}
+    nano ~/proyecto_ecobici/rotacion_particiones.sh
+\end{lstlisting}
+
+
+\begin{lstlisting}
+    !/bin/bash
+    Rotacion mensual de particiones y generacion de resumen
+    DIR=$HOME/proyecto_ecobici
+    MYSQL="docker exec mysql-master mysql -uroot -p_xxx -DB_Ecobici_CDMX -N -e"
+
+    Obtenemos el mes anterior (el que vamos a rotar)
+    MES_A_ROTAR=$(date -d "last month" +"%Y%m")
+    PARTICION="p_$MES_A_ROTAR"
+
+    1. Resumir los datos antes de borrarlos
+    $MYSQL "INSERT IGNORE INTO resumen_viajes_mes (anio, mes, ciclo_estacion_retiro, genero_usuario, total_viajes, edad_promedio, duracion_promedio_min)
+    SELECT YEAR(fecha_retiro), MONTH(fecha_retiro), ciclo_estacion_retiro, IFNULL(genero_usuario, 'N'), COUNT(*), AVG(edad_usuario), AVG(TIME_TO_SEC(TIMEDIFF(hora_arribo, hora_retiro))/60)
+    FROM historico_viajes PARTITION ($PARTICION)
+    GROUP BY 1, 2, 3, 4;"
+
+    2. Eliminar el detalle pesado
+    $MYSQL "ALTER TABLE historico_viajes DROP PARTITION $PARTICION;"
+
+    echo "$(date) Rotacion completada para $PARTICION" >> $DIR/logs/respaldos.log
+\end{lstlisting}
+
+\begin{lstlisting}
+    chmod +x ~/proyecto_ecobici/rotacion_particiones.sh
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Backup.png}
+    \caption{Pogramador de tareas}
+\end{figure}
+
+
+\newpage
+
+\subsection{Programación de tareas(Cron) y Monitoreo}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Programador_tareas.png}
+    \caption{Pogramador de tareas}
+\end{figure}
 
 
 \end{document}
