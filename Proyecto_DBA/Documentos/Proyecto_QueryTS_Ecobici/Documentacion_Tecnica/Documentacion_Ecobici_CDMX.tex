@@ -1669,8 +1669,8 @@ se usara el programador interno de MySQL (Event Scheduler).
 
 \subsubsection{MySQL Workbench}
 
-Abre una nueva pestaña de consultas SQL y ejecuta el 
-código exacto para crear el evento.
+En una nueva pestaña de consultas SQL se ejecuta el 
+código para crear el evento.
 
 \begin{lstlisting}
     USE DB_Ecobici_CDMX;
@@ -1752,6 +1752,62 @@ Se Crea el script de rotación en tu terminal
 \includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/Programador_tareas.png}
     \caption{Pogramador de tareas}
 \end{figure}
+
+\newpage
+
+\section{Plan de Recuperación ante Desastres (DRP)}
+
+\subsection{Alcance y Objetivo del DRP}
+El objetivo principal de este DRP es garantizar la continuidad operativa del sistema de Ecobici CDMX ante cualquier eventualidad técnica o desastre. Se establecen dos métricas clave para la estrategia de recuperación:
+\begin{itemize}
+    \item \textbf{RTO (Recovery Time Objective):} Minimizar el tiempo de inactividad del servicio a tan solo unos segundos, logrando la conmutación automática del tráfico mediante los \textit{health checks} de HAProxy hacia los nodos secundarios.
+    \item \textbf{RPO (Recovery Point Objective):} Garantizar una pérdida de datos cercana a cero, combinando la replicación síncrona/asíncrona activa con una restauración exacta en el tiempo (PITR) apoyada en bitácoras de transacciones.
+\end{itemize}
+
+\subsection{Arquitectura de Respaldo Existente}
+La infraestructura en Google Cloud Platform está protegida por un esquema de copias de seguridad automatizadas mediante \texttt{cron}:
+\begin{itemize}
+    \item \textbf{Respaldo Lógico Semanal:} Se ejecuta todos los domingos a las 03:00 hrs. Utiliza \texttt{mysqldump} con la directiva \texttt{--source-data=2} para incluir las coordenadas de replicación GTID. Este proceso genera un archivo comprimido de aproximadamente 439 MB sin bloquear la operación gracias a \texttt{--single-transaction}.
+    \item \textbf{Respaldos Incrementales (Binlogs):} Un script automatizado se ejecuta diariamente a las 00:50 hrs para rotar (\texttt{FLUSH BINARY LOGS}) y exportar la bitácora de transacciones del día, manteniendo una política de retención estricta de 14 días.
+\end{itemize}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/evidencia_respaldo_completo.png}
+\caption{Evidencia del respaldo lógico completo automatizado en GCP.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/evidencia_binlogs.png}
+\caption{Evidencia de la bitácora de transacciones (Binlogs) para recuperación PITR.}
+\end{figure}
+
+\subsection{Protocolo de Respuesta (Escenarios de Desastre)}
+
+\subsubsection*{Caso 1: Caída del Servidor Primario (Hard Crash)}
+Si el nodo Maestro sufre un apagón, pérdida total de conectividad o falla de hardware en GCP, el mecanismo de respuesta es el siguiente:
+\begin{enumerate}
+    \item \textbf{Detección y Redirección:} HAProxy detecta la caída del Maestro y redirige el tráfico automáticamente hacia la Réplica.
+    \item \textbf{Modo de Protección:} La Réplica recibe el tráfico en modo \texttt{read-only}, permitiendo consultas pero protegiendo la consistencia de los datos.
+    \item \textbf{Promoción a Maestro:} Si el nodo original es irrecuperable, el administrador interviene deshabilitando el modo lectura en la Réplica (\texttt{SET GLOBAL read\_only = OFF;}) para promoverla a Maestro principal y aceptar nuevas escrituras.
+\end{enumerate}
+
+\subsubsection*{Caso 2: Corrupción del Disco o Errores DML (Tablespace \texttt{viajes})}
+Ante una eliminación accidental masiva (\texttt{DELETE} sin \texttt{WHERE}) o corrupción del archivo \texttt{.ibd}:
+\begin{enumerate}
+    \item \textbf{Aislamiento:} Se detiene inmediatamente la replicación en el nodo sano (\texttt{STOP SLAVE;}) para evitar que la corrupción se propague por GTID.
+    \item \textbf{Restauración Base:} En una instancia aislada de recuperación, se restaura el último Respaldo Completo de 439 MB.
+    \item \textbf{PITR (Point-In-Time Recovery):} Se aplican secuencialmente los Binlogs utilizando \texttt{mysqlbinlog} con el parámetro \texttt{--stop-datetime}, deteniendo la inyección de eventos exactamente un segundo antes del error. Una vez validada, la data limpia se reintegra a producción.
+\end{enumerate}
+
+\subsubsection*{Caso 3: Mantenimiento Preventivo (Switchover)}
+Para realizar actualizaciones del sistema operativo o escalar el hardware de la máquina virtual sin interrumpir el servicio:
+\begin{enumerate}
+    \item \textbf{Bloqueo de Escrituras:} Se configura el Maestro en modo lectura estricta (\texttt{SET GLOBAL super\_read\_only = ON;}).
+    \item \textbf{Sincronización GTID:} Se monitorea la Réplica hasta confirmar que ha procesado la última transacción pendiente del Maestro.
+    \item \textbf{Conmutación (Failover Controlado):} Se apaga el servicio MySQL del Maestro ordenadamente. HAProxy detectará la baja controlada y asignará el tráfico de la aplicación a la Réplica mientras dura la ventana de mantenimiento.
+\end{enumerate}
 
 
 \end{document}
