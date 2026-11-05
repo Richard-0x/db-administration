@@ -674,3 +674,6 @@ FROM sys.statements_with_full_table_scans
 LIMIT 5;
 
 SHOW CREATE TABLE viajes;
+
+
+SHOW VARIABLES LIKE 'innodb_buffer_pool_size';

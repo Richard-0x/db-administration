@@ -5,7 +5,7 @@
 \usepackage{lmodern}
 \usepackage{csquotes}
 \usepackage{amsmath, amsfonts, amssymb, amsthm}
-
+\usepackage{booktabs}
 \usepackage{graphicx}
 \usepackage{subcaption}
 \usepackage{float}
@@ -1809,5 +1809,184 @@ Para realizar actualizaciones del sistema operativo o escalar el hardware de la 
     \item \textbf{Conmutación (Failover Controlado):} Se apaga el servicio MySQL del Maestro ordenadamente. HAProxy detectará la baja controlada y asignará el tráfico de la aplicación a la Réplica mientras dura la ventana de mantenimiento.
 \end{enumerate}
 
+\newpage
+
+\section{Pagina web}
+
+\begin{lstlisting}
+    http://34.136.125.78:8404/stats
+    https://app.sendgrid.com/
+    https://console.cloud.google.com/
+    https://red-bicicletas-rb.onrender.com
+\end{lstlisting}
+
+\subsection{Backend y Frontend}
+
+\begin{center}
+    \href{https://bitbucket.org/richard-lprz/red_bicicletas_rb/src/main/}{
+        \fbox{\rule{0pt}{12pt}\hspace{8pt}\textbf{Repositorio Bitbucket}\hspace{8pt}}
+    }
+\end{center}
+\vspace{2mm}
+
+\text{Clonar Repositorio Bitbucket}
+\begin{lstlisting}
+    git clone https://richard-lprz-admin@bitbucket.org/richard-lprz/red_bicicletas_rb.git
+\end{lstlisting}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/APP_WEB_1.png}
+\caption{Pagina principal}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/APP_WEB_2.png}
+\caption{Pagina principal}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/APP_WEB_3.png}
+\caption{Pagina principal.}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/APP_WEB_REV.png}
+\caption{Pagina principal para registro}
+\end{figure}
+
+\newpage
+
+\section{Servidor Render}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/render.png}
+\caption{Web Services}
+\end{figure}
+
+\newpage
+
+\section{Plataforma de envío de correos electrónico}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/sendgrid.png}
+\caption{Web Services}
+\end{figure}
+
+\newpage
+
+\section{Maquina Viertual GCP IaaS}
+
+La maquina virtual de Google Cloud. Dos instancias MySQL ejecutandose en Docker:
+
+\begin{itemize}
+    \item mysql-master.
+    \item mysql-slave.
+\end{itemize}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Almacenamiento GCP}
+    \label{tab:Disk}
+    \begin{tabular}{lr}
+        \toprule
+        \textbf{Recurso} & \textbf{Capacidad} \\
+        \midrule
+        Disco raíz         & 24 GB  \\
+        Espacio utilizado  & 22 GB  \\
+        Espacio disponible & 2.1 GB \\
+        Ocupación          & 92\%   \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/SSH_VM.png}
+\caption{Web Services}
+\end{figure}
+
+\subsection{RAM configurada por nodo}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Configuración del Buffer Pool en MySQL Master y Slave}
+    \label{tab:buffer_pool}
+    \begin{tabular}{lrr}
+        \toprule
+        \textbf{Nodo} & \textbf{Buffer Pool (bytes)} & \textbf{Buffer Pool (MB)} \\
+        \midrule
+        MySQL Master & 402,653,184 & 384 MB \\
+        MySQL Slave  & 402,653,184 & 384 MB \\
+        \midrule
+        \textbf{Total} & \textbf{805,306,368} & \textbf{768 MB} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+
+\begin{figure}[H]
+    \centering
+\includegraphics[width=0.85\textwidth]{../../../Archivos/Imagen/SSH_RAM_MYSQL.png}
+\caption{Web Services}
+\end{figure}
+
+\section{Consumo de RAM por contenedor}
+
+\texttt{docker stats --no-stream}.
+
+\begin{table}[htbp]
+    \centering
+    \caption{Consumo de memoria RAM por contenedor Docker}
+    \label{tab:ram_contenedores}
+    \begin{tabular}{lrrr}
+        \toprule
+        \textbf{Contenedor} &
+        \textbf{RAM utilizada} &
+        \textbf{Límite mostrado} &
+        \textbf{Consumo} \\
+        \midrule
+        mysql-haproxy & 2.14 MiB  & 953.6 MiB & 0.22\% \\
+        mysql-master  & 66.07 MiB & 953.6 MiB & 6.93\% \\
+        mysql-slave   & 41.55 MiB & 953.6 MiB & 4.36\% \\
+        \midrule
+        \textbf{Total} & \textbf{109.76 MiB} & --- & --- \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
+\subsection{Distribución del consumo actual}
+
+El consumo de memoria RAM.
+
+\begin{itemize}
+    \item \textbf{MySQL Master:} 66.07 MiB.
+    \item \textbf{MySQL Slave:} 41.55 MiB.
+    \item \textbf{HAProxy:} 2.14 MiB.
+\end{itemize}
+
+\begin{table}[htbp]
+    \centering
+    \caption{Consumo total de memoria RAM}
+    \label{tab:ram_total}
+    \begin{tabular}{lr}
+        \toprule
+        \textbf{Concepto} & \textbf{Memoria utilizada} \\
+        \midrule
+        MySQL Master & 66.07 MiB \\
+        MySQL Slave  & 41.55 MiB \\
+        HAProxy      & 2.14 MiB \\
+        \midrule
+        \textbf{Consumo total} & \textbf{109.76 MiB} \\
+        \bottomrule
+    \end{tabular}
+\end{table}
+
 
 \end{document}
+
