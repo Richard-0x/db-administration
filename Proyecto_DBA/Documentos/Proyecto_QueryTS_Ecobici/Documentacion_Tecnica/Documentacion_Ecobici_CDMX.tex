@@ -272,7 +272,7 @@ arquitecturas de datos.
 \subsection{Información a Visualizar en la Base de Datos}
 La base de datos está estructurada para visualizar la interacción entre los usuarios y el sistema de movilidad mediante las siguientes dimensiones y métricas:
 \begin{itemize}
-    \item \textbf{Hechos de Movilidad:} Más de 6.5 millones de registros operativos en la tabla principal y más de 30 millones en el histórico, detallando cada viaje realizado.
+    \item \textbf{Hechos de Movilidad:} Más de 6.5 millones de registros operativos en la tabla principal y más de 20 millones en el histórico, detallando cada viaje realizado.
     \item \textbf{Perfiles Demográficos:} Género y edad de los usuarios, permitiendo segmentar el comportamiento del consumidor.
     \item \textbf{Dimensión Espacial:} Catálogo de estaciones de retiro y arribo, incluyendo su nomenclatura y zonificación, para trazar las rutas urbanas.
     \item \textbf{Dimensión Temporal:} Fechas exactas y franjas horarias (Mañana, Tarde, Noche, Madrugada) para identificar horas pico y valles de demanda.
@@ -287,9 +287,9 @@ La base de datos está estructurada para visualizar la interacción entre los us
 \begin{tabular}{|l|c|l|}
 \hline
 \textbf{Tabla / Entidad} & \textbf{Tipo en Modelo} & \textbf{Volumen Aproximado} \\ \hline
-Historico Viajes & Tabla Particionada & $> 30,000,000$ registros \\ \hline
+Historico Viajes & Tabla Particionada & $> 20,000,000$ registros \\ \hline
 Viajes (2025-2026) & Tabla de Hechos & $> 6,500,000$ registros \\ \hline
-Estaciones & Catálogo / Dimensión & 683 estaciones únicas \\ \hline
+Estaciones & Catálogo / Dimensión & 681 estaciones únicas \\ \hline
 Tiempos & Dimensión Temporal & 86,400 segundos \\ \hline
 \end{tabular}
 \label{tab:volumetria}
@@ -1177,7 +1177,7 @@ Si quieres ver cómo tu computadora está trabajando, puedes abrir una nueva pes
     \caption{Cof SO}
 \end{figure}
 
-Tamaño: 10 GB (por defecto).
+Tamaño: 25 GB.
 Firewall: Marca la casilla Permitir tráfico HTTP y Permitir tráfico HTTPS. 
 
 \begin{figure}[H]
@@ -1987,6 +1987,38 @@ El consumo de memoria RAM.
     \end{tabular}
 \end{table}
 
+\newpage
+
+\section{Referencias}
+
+\begin{thebibliography}{9}
+
+\bibitem{gemini}
+Google. (2026). \textit{Gemini} (Versión de noviembre de 2026) [Modelo de lenguaje grande]. 
+\url{https://gemini.google.com/}
+
+\bibitem{mysql}
+Oracle Corporation. (2026). \textit{MySQL 8.0 Reference Manual}. Documentación oficial de MySQL sobre replicación GTID, optimización de InnoDB y gestión de particiones. \url{https://dev.mysql.com/doc/refman/8.0/en/}
+
+\bibitem{haproxy}
+HAProxy Technologies. (2026). \textit{HAProxy Configuration Manual} (Versión 2.4). Guía oficial para configuración de balanceo de carga de Capa 4 y health checks de bases de datos. \url{https://docs.haproxy.org/2.4/configuration.html}
+
+\bibitem{gcp}
+Google Cloud. (2026). \textit{Google Cloud Compute Engine Documentation}. Documentación técnica sobre la administración de máquinas virtuales (IaaS), configuración de firewall (VPC) y reglas de red. \url{https://cloud.google.com/compute/docs}
+
+\bibitem{ecobici}
+Secretaría de Movilidad de la Ciudad de México (SEMOVI). (2026). \textit{Datos Abiertos Ecobici CDMX}. Repositorio oficial de viajes históricos y catálogo del sistema de bicicletas públicas de la Ciudad de México (Datos de 2024 a 2026). \url{https://www.ecobici.cdmx.gob.mx/es/informacion-del-servicio/open-data}
+
+\bibitem{gbfs}
+North American Bikeshare Association (NABSA). (2026). \textit{General Bikeshare Feed Specification (GBFS)}. Estándar de datos abiertos utilizado para la integración del padrón de estaciones y coordenadas geoespaciales en la aplicación web. \url{https://github.com/MobilityData/gbfs}
+
+\bibitem{sendgrid}
+Twilio. (2026). \textit{SendGrid Email API Documentation}. Documentación oficial para la integración del servicio de entrega de correos electrónicos transaccionales y alertas críticas del DRP. \url{https://docs.sendgrid.com/}
+
+\bibitem{render}
+Render Networks. (2026). \textit{Render Cloud Application Hosting}. Documentación de plataforma como servicio (PaaS) utilizada para el despliegue del backend de Node.js y la aplicación web de Alta Disponibilidad. \url{https://render.com/docs}
+
+\end{thebibliography}
 
 \end{document}
 
